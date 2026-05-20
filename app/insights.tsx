@@ -1,0 +1,3 @@
+import React from 'react'; import { View, Text, StyleSheet, ImageBackground } from 'react-native'; import Header from '../components/Header';
+export default function InsightsScreen({ navigation }: any) { return <ImageBackground source={require('../images/learn.png')} style={s.bg}><View style={s.ov}><Header title='Daily Insight' onBack={()=>navigation.goBack()} /><Text style={s.t}>"Just 5 mindful minutes can shift your entire day."</Text></View></ImageBackground>; }
+const s=StyleSheet.create({bg:{flex:1},ov:{flex:1,padding:20,paddingTop:56,backgroundColor:'rgba(2,8,30,0.55)'},t:{marginTop:24,color:'#fff',fontSize:28,lineHeight:38,fontWeight:'600'}});
