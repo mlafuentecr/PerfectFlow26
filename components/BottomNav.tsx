@@ -2,21 +2,22 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../App';
 import { useI18n } from '../services/i18n';
+import { GLASS_CARD_BASE } from '../services/uiStyles';
 
 type Tab = 'home' | 'breathing' | 'insights' | 'sessions' | 'profile';
+type TabScreen = Tab;
 
 export default function BottomNav({
   active,
   navigate,
 }: {
   active: Tab;
-  navigate: (screen: keyof RootStackParamList) => void;
+  navigate: (screen: TabScreen) => void;
 }) {
   const { t } = useI18n();
 
-  const items: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap; screen: keyof RootStackParamList }[] = [
+  const items: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap; screen: TabScreen }[] = [
     { key: 'home', label: t('home'), icon: 'home-outline', screen: 'home' },
     { key: 'breathing', label: t('breathe'), icon: 'refresh-circle-outline', screen: 'breathing' },
     { key: 'insights', label: t('learn'), icon: 'book-outline', screen: 'insights' },
@@ -46,22 +47,15 @@ export default function BottomNav({
 
 const s = StyleSheet.create({
   wrap: {
+    ...GLASS_CARD_BASE,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.49)',
-    backgroundColor: 'rgba(255,255,255,0.09)',
     marginHorizontal: 10,
     marginBottom: 8,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 4 },
   },
   item: { alignItems: 'center', width: 64 },
   label: { color: '#D9E2FF', fontSize: 12, marginTop: 4 },

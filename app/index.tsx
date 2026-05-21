@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ImageBackground, StyleSheet, Text, View, TouchableOpacity, Alert, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Alert, Image } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../App';
+import ScreenBackground from '../components/ScreenBackground';
 import StartJourney from '../components/StartJourney';
 import { signInWithGoogleNative, subscribeAuth } from '../services/auth';
 import { useI18n } from '../services/i18n';
@@ -33,7 +34,7 @@ export default function IndexScreen({ navigation }: Props) {
   };
 
   return (
-    <ImageBackground source={require('../images/bg.png')} style={s.bg}>
+    <ScreenBackground>
       <LinearGradient
         colors={['rgba(2,8,28,0)', 'rgba(2,8,28,0.08)', 'rgba(2,8,28,0.45)', 'rgba(2,8,28,0.82)']}
         locations={[0, 0.42, 0.78, 1]}
@@ -56,12 +57,11 @@ export default function IndexScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </LinearGradient>
-    </ImageBackground>
+    </ScreenBackground>
   );
 }
 
 const s = StyleSheet.create({
-  bg: { flex: 1 },
   overlay: {
     flex: 1,
     paddingHorizontal: 26,

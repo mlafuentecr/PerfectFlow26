@@ -1,0 +1,176 @@
+{
+  "en": {
+    "faq": {
+      "title": "FAQs",
+      "items": [
+        {
+          "id": "faq-1",
+          "question": "What is anxiety?",
+          "answer": "Anxiety is your body's natural response to stress. It can feel like fear, tension, and racing thoughts when your mind is trying to protect you from uncertainty."
+        },
+        {
+          "id": "faq-2",
+          "question": "What happens when we're anxious?",
+          "answer": "Your heartbeat may increase, breathing can become shallow, and your muscles can tighten. Slow breathing helps signal safety to your nervous system."
+        },
+        {
+          "id": "faq-3",
+          "question": "When does anxiety become a problem?",
+          "answer": "It becomes a problem when it is frequent, intense, or starts affecting sleep, work, relationships, or daily routines."
+        },
+        {
+          "id": "faq-4",
+          "question": "How can I relax quickly?",
+          "answer": "Try inhale 4 and exhale 6 for 2-5 minutes. A longer exhale helps your body release tension and calm down faster."
+        },
+        {
+          "id": "faq-5",
+          "question": "What is CBT?",
+          "answer": "CBT means Cognitive Behavioral Therapy. It helps you identify unhelpful thought patterns and replace them with healthier responses."
+        },
+        {
+          "id": "faq-6",
+          "question": "Where can I get help?",
+          "answer": "If you feel overwhelmed, reach out to a trusted person, a licensed professional, or local crisis support in your country."
+        }
+      ]
+    },
+    "terms": {
+      "title": "Terms & Conditions",
+      "items": [
+        {
+          "id": "terms-1",
+          "question": "Wellness use only",
+          "answer": "PerfectFlow is a wellness app and does not replace medical, psychological, or emergency care."
+        },
+        {
+          "id": "terms-2",
+          "question": "Personal responsibility",
+          "answer": "Use breathing exercises at your own pace. Stop any session if you feel discomfort and consult a professional if needed."
+        },
+        {
+          "id": "terms-3",
+          "question": "Content updates",
+          "answer": "Exercises, insights, and recommendations may be updated over time to improve your experience."
+        },
+        {
+          "id": "terms-4",
+          "question": "Account access",
+          "answer": "You are responsible for keeping your account access secure and for activity under your login."
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "items": [
+        {
+          "id": "privacy-1",
+          "question": "What data we store",
+          "answer": "We store profile basics, session preferences, and local app settings to provide a personalized experience."
+        },
+        {
+          "id": "privacy-2",
+          "question": "How we use data",
+          "answer": "Data is used to improve features like breathing personalization, language preferences, and progress tracking."
+        },
+        {
+          "id": "privacy-3",
+          "question": "Third-party services",
+          "answer": "Authentication and app infrastructure may rely on trusted services such as Firebase and Google Sign-In."
+        },
+        {
+          "id": "privacy-4",
+          "question": "Your control",
+          "answer": "You can sign out anytime and request changes to profile-related information handled in the app."
+        }
+      ]
+    }
+  },
+  "es": {
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "items": [
+        {
+          "id": "faq-1",
+          "question": "¿Qué es la ansiedad?",
+          "answer": "La ansiedad es la respuesta natural del cuerpo al estrés. Puede sentirse como miedo, tensión y pensamientos acelerados ante la incertidumbre."
+        },
+        {
+          "id": "faq-2",
+          "question": "¿Qué pasa cuando estamos ansiosos?",
+          "answer": "Puede aumentar el ritmo cardiaco, la respiración se vuelve superficial y los músculos se tensan. Respirar lento ayuda a calmar el sistema nervioso."
+        },
+        {
+          "id": "faq-3",
+          "question": "¿Cuándo la ansiedad se vuelve un problema?",
+          "answer": "Se vuelve un problema cuando es frecuente, intensa o afecta el sueño, trabajo, relaciones o actividades diarias."
+        },
+        {
+          "id": "faq-4",
+          "question": "¿Cómo puedo relajarme rápido?",
+          "answer": "Prueba inhalar 4 y exhalar 6 por 2-5 minutos. Una exhalación más larga ayuda a liberar tensión más rápido."
+        },
+        {
+          "id": "faq-5",
+          "question": "¿Qué es la TCC (CBT)?",
+          "answer": "La TCC es la Terapia Cognitivo Conductual. Ayuda a identificar patrones de pensamiento no útiles y reemplazarlos por respuestas más sanas."
+        },
+        {
+          "id": "faq-6",
+          "question": "¿Dónde puedo pedir ayuda?",
+          "answer": "Si te sientes sobrepasado, busca apoyo en una persona de confianza, un profesional de salud mental o líneas de crisis locales."
+        }
+      ]
+    },
+    "terms": {
+      "title": "Términos y condiciones",
+      "items": [
+        {
+          "id": "terms-1",
+          "question": "Uso de bienestar",
+          "answer": "PerfectFlow es una app de bienestar y no sustituye atención médica, psicológica ni de emergencia."
+        },
+        {
+          "id": "terms-2",
+          "question": "Responsabilidad personal",
+          "answer": "Usa los ejercicios a tu ritmo. Detén la sesión si hay molestia y consulta a un profesional si lo necesitas."
+        },
+        {
+          "id": "terms-3",
+          "question": "Actualizaciones de contenido",
+          "answer": "Los ejercicios, insights y recomendaciones pueden actualizarse para mejorar tu experiencia."
+        },
+        {
+          "id": "terms-4",
+          "question": "Acceso de cuenta",
+          "answer": "Eres responsable de mantener segura tu cuenta y la actividad realizada desde tu sesión."
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Política de privacidad",
+      "items": [
+        {
+          "id": "privacy-1",
+          "question": "Qué datos guardamos",
+          "answer": "Guardamos datos básicos de perfil, preferencias de sesiones y ajustes locales para personalizar la experiencia."
+        },
+        {
+          "id": "privacy-2",
+          "question": "Cómo usamos los datos",
+          "answer": "Los datos se usan para mejorar funciones como personalización de respiración, idioma y seguimiento de progreso."
+        },
+        {
+          "id": "privacy-3",
+          "question": "Servicios de terceros",
+          "answer": "La autenticación e infraestructura pueden usar servicios confiables como Firebase y Google Sign-In."
+        },
+        {
+          "id": "privacy-4",
+          "question": "Tu control",
+          "answer": "Puedes cerrar sesión cuando quieras y solicitar cambios sobre información de perfil en la app."
+        }
+      ]
+    }
+  }
+}

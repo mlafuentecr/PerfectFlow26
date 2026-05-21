@@ -54,3 +54,39 @@ npx expo start -c --dev-client
 ```
 
 Después abre la app **PerfectFlow** (no Expo Go).
+
+## Si sale `Google sign-in failed (7): NETWORK_ERROR`
+
+Ese error normalmente es conectividad/proxy/Google Play Services dentro del emulador (no Firebase config).
+
+Haz esto exacto:
+
+1. Verifica internet dentro del emulador:
+   - Abre Chrome en el emulador y entra a `https://accounts.google.com`
+
+2. Quita proxy global del emulador:
+
+```bash
+adb shell settings put global http_proxy :0
+adb shell settings put global https_proxy :0
+```
+
+3. Reinicia limpio el emulador:
+
+```bash
+adb emu kill
+```
+
+Luego vuelve a abrir el emulador con **Cold Boot** desde Android Studio Device Manager.
+
+4. Reinstala app + corre Metro en dev client:
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
+npx expo run:android
+npx expo start -c --dev-client
+```
+
+5. Si sigue fallando:
+   - Borra datos de **Google Play Services** y **Google app** dentro del emulador.
+   - Vuelve a iniciar sesión con tu cuenta Google en el emulador.

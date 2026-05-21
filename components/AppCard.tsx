@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { GLASS_CARD_BASE } from '../services/uiStyles';
 
 export default function AppCard({
   title,
@@ -21,16 +22,9 @@ export default function AppCard({
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 16,
+    ...GLASS_CARD_BASE,
     padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.49)',
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 4 },
   },
   t: { color: '#fff', fontSize: 22, fontWeight: '700' },
   d: { color: '#D6DEFF', fontSize: 15, marginTop: 8, lineHeight: 22 },

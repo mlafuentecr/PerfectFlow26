@@ -1,25 +1,98 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, ImageBackground } from 'react-native';
+import {
+  Alert,
+  AppState,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ImageBackground,
+  useWindowDimensions,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../App';
-import AppCard from '../components/AppCard';
 import BottomNav from '../components/BottomNav';
+import ReminderButton from '../components/ReminderButton';
+import ScreenBackground from '../components/ScreenBackground';
 import { auth } from '../services/firebase';
 import { useI18n } from '../services/i18n';
 import { getProfileName } from '../services/profile';
 import { getCurrentStreak, getWeekCompletion } from '../services/streak';
 import { BREATH_BACKGROUNDS, getBreathBackgroundKey } from '../services/breathingPrefs';
+import { GLASS_CARD_BASE } from '../services/uiStyles';
+import {
+  clearDailyReminder,
+  DailyReminder,
+  formatReminderTime,
+  getDailyReminder,
+  scheduleDailyReminder,
+} from '../services/reminders';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'home'>;
+type BreathTechnique = 'Box Breathing' | '4-7-8 Breathing' | 'Coherent Breathing' | 'Calm Reset' | 'Wim Hof';
+
+const MOOD_SESSIONS: Array<{
+  title: string;
+  time: string;
+  technique: BreathTechnique;
+  icon: keyof typeof Ionicons.glyphMap;
+  tint: string;
+  gradient: [string, string];
+}> = [
+  { title: 'Anxiety Relief', time: '7 min', technique: '4-7-8 Breathing', icon: 'water-outline', tint: '#98E9FF', gradient: ['rgba(9,43,78,0.82)', 'rgba(21,108,143,0.44)'] },
+  { title: 'Stress Reset', time: '5 min', technique: 'Calm Reset', icon: 'leaf-outline', tint: '#9FF5C4', gradient: ['rgba(11,56,67,0.84)', 'rgba(29,118,108,0.42)'] },
+  { title: 'Anger Release', time: '6 min', technique: 'Box Breathing', icon: 'flame-outline', tint: '#FFB59B', gradient: ['rgba(70,23,33,0.86)', 'rgba(137,66,54,0.44)'] },
+  { title: 'Overthinking Calm', time: '8 min', technique: 'Coherent Breathing', icon: 'cloud-outline', tint: '#CAD7FF', gradient: ['rgba(22,37,82,0.86)', 'rgba(74,91,152,0.42)'] },
+  { title: 'Deep Focus', time: '10 min', technique: 'Box Breathing', icon: 'radio-button-on-outline', tint: '#CDB9FF', gradient: ['rgba(32,24,92,0.87)', 'rgba(89,66,164,0.42)'] },
+  { title: 'Sleep Wind Down', time: '12 min', technique: '4-7-8 Breathing', icon: 'moon-outline', tint: '#E1D6FF', gradient: ['rgba(31,22,82,0.86)', 'rgba(91,70,151,0.43)'] },
+  { title: 'Sadness Support', time: '7 min', technique: 'Coherent Breathing', icon: 'rainy-outline', tint: '#A9CFFF', gradient: ['rgba(12,37,79,0.87)', 'rgba(59,95,159,0.44)'] },
+  { title: 'Panic Reset', time: '5 min', technique: 'Calm Reset', icon: 'heart-half-outline', tint: '#FFB8CC', gradient: ['rgba(59,21,73,0.88)', 'rgba(121,57,113,0.43)'] },
+  { title: 'Confidence Boost', time: '6 min', technique: 'Box Breathing', icon: 'trophy-outline', tint: '#FFD794', gradient: ['rgba(64,38,14,0.86)', 'rgba(138,98,42,0.44)'] },
+  { title: 'Low Energy Reset', time: '5 min', technique: 'Wim Hof', icon: 'flash-outline', tint: '#FFF0A8', gradient: ['rgba(71,54,18,0.87)', 'rgba(146,114,44,0.44)'] },
+];
+
+const INSIGHTS: Array<{ hook: string; message: string }> = [
+  { hook: 'Feeling anxious?', message: 'A slower exhale can help your body feel safer and more grounded.' },
+  { hook: 'Feeling stressed?', message: 'Take 5 minutes to slow your rhythm and reset your mind.' },
+  { hook: 'Need focus?', message: 'A steady breathing pattern can help clear mental noise.' },
+  { hook: 'Before sleep', message: 'Slow breathing can help your body shift into rest mode.' },
+  { hook: 'Mind racing?', message: 'Try inhale 4, exhale 6 for a gentler mental pace.' },
+  { hook: 'Low energy?', message: 'A short active breathing cycle can wake up your attention.' },
+  { hook: 'Heavy day?', message: 'One mindful minute is enough to interrupt tension.' },
+  { hook: 'Need balance?', message: 'Consistent breathing creates emotional stability over time.' },
+  { hook: 'Overthinking?', message: 'Return to your breath and your thoughts will soften.' },
+  { hook: 'Quick reset', message: 'Breathe in calm, breathe out pressure.' },
+];
+
+const LAST_INSIGHT_INDEX_KEY = 'pf_last_insight_index_v1';
 
 export default function HomeScreen({ navigation }: Props) {
   const [name, setName] = useState('');
   const [streak, setStreak] = useState(0);
   const [week, setWeek] = useState<boolean[]>([false, false, false, false, false, false, false]);
   const [heroBgKey, setHeroBgKey] = useState<(typeof BREATH_BACKGROUNDS)[number]['key']>('mountain');
-  const { t } = useI18n();
+  const [insightIndex, setInsightIndex] = useState(0);
+  const { t, language } = useI18n();
+  const { height } = useWindowDimensions();
+  const compact = height < 840;
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminder, setReminder] = useState<DailyReminder | null>(null);
+  const [reminderHour, setReminderHour] = useState(9);
+  const [reminderMinute, setReminderMinute] = useState(0);
+
+  const rotateInsightOnOpen = async () => {
+    const raw = await AsyncStorage.getItem(LAST_INSIGHT_INDEX_KEY);
+    const last = Number.isFinite(Number(raw)) ? Number(raw) : -1;
+    const next = (last + 1 + INSIGHTS.length) % INSIGHTS.length;
+    setInsightIndex(next);
+    await AsyncStorage.setItem(LAST_INSIGHT_INDEX_KEY, String(next));
+  };
 
   useEffect(() => {
     const unsub = navigation.addListener('focus', async () => {
@@ -29,27 +102,97 @@ export default function HomeScreen({ navigation }: Props) {
       setStreak(await getCurrentStreak());
       setWeek(await getWeekCompletion());
       setHeroBgKey(await getBreathBackgroundKey());
+      const savedReminder = await getDailyReminder();
+      setReminder(savedReminder);
+      if (savedReminder) {
+        setReminderHour(savedReminder.hour);
+        setReminderMinute(savedReminder.minute);
+      }
     });
     return unsub;
   }, [navigation]);
 
+  useEffect(() => {
+    // Rotate insight whenever app is opened/returned to foreground.
+    void rotateInsightOnOpen();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void rotateInsightOnOpen();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   const heroBg = BREATH_BACKGROUNDS.find((b) => b.key === heroBgKey) ?? BREATH_BACKGROUNDS[0];
+  const weekDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const jsDay = new Date().getDay(); // Sun=0..Sat=6
+  const todayIndexMonFirst = (jsDay + 6) % 7;
+  const reminderSubtitle = reminder
+    ? `${language === 'es' ? 'Diario a las' : 'Daily at'} ${formatReminderTime(reminder.hour, reminder.minute, language)}`
+    : language === 'es'
+      ? 'Recibe un recordatorio para respirar y resetear.'
+      : 'Get a gentle nudge to breathe and reset.';
+
+  const openReminderModal = () => {
+    if (reminder) {
+      setReminderHour(reminder.hour);
+      setReminderMinute(reminder.minute);
+    }
+    setShowReminderModal(true);
+  };
+
+  const saveReminder = async () => {
+    try {
+      const saved = await scheduleDailyReminder(reminderHour, reminderMinute, language);
+      setReminder(saved);
+      setShowReminderModal(false);
+      Alert.alert(
+        language === 'es' ? 'Recordatorio activado' : 'Reminder enabled',
+        language === 'es'
+          ? `Se programó todos los días a las ${formatReminderTime(saved.hour, saved.minute, language)}.`
+          : `Scheduled daily at ${formatReminderTime(saved.hour, saved.minute, language)}.`
+      );
+    } catch (error: any) {
+      if (String(error?.message).includes('NOTIFICATION_PERMISSION_DENIED')) {
+        Alert.alert(
+          language === 'es' ? 'Permiso requerido' : 'Permission required',
+          language === 'es'
+            ? 'Debes permitir notificaciones para activar recordatorios.'
+            : 'You must allow notifications to enable reminders.'
+        );
+        return;
+      }
+      Alert.alert(language === 'es' ? 'Error' : 'Error', String(error?.message ?? error));
+    }
+  };
+
+  const removeReminder = async () => {
+    await clearDailyReminder();
+    setReminder(null);
+    setShowReminderModal(false);
+    Alert.alert(language === 'es' ? 'Recordatorio desactivado' : 'Reminder disabled');
+  };
 
   return (
-    <LinearGradient colors={['#020D35', '#041A5E', '#041746']} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={s.c}>
+    <ScreenBackground style={s.screenBg} backgroundKey={heroBgKey} syncOnFocus={false}>
+      <View style={s.c}>
         <View style={s.greetWrap}>
           <Text style={s.greet}>{t('greeting')}{name ? `, ${name}` : ''}</Text>
           <Text style={s.helper}>{t('motivator')}</Text>
         </View>
+        <ReminderButton
+          enabled={!!reminder}
+          subtitle={reminderSubtitle}
+          onPress={openReminderModal}
+        />
 
         <Pressable style={s.heroCard} onPress={() => navigation.navigate('breathing')}>
-          <ImageBackground source={heroBg.src} style={s.heroImage} imageStyle={s.heroImageStyle}>
+          <ImageBackground source={heroBg.src} style={[s.heroImage, compact && s.heroImageCompact]} imageStyle={s.heroImageStyle}>
             <LinearGradient
               colors={['rgba(5,15,48,0.92)', 'rgba(8,22,62,0.72)', 'rgba(8,22,62,0.15)']}
               locations={[0, 0.62, 1]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
+              start={{ x: 0.5, y: 1 }}
+              end={{ x: 0.5, y: 0 }}
               style={s.heroOverlay}
             >
               <View style={s.heroContent}>
@@ -63,103 +206,172 @@ export default function HomeScreen({ navigation }: Props) {
           </ImageBackground>
         </Pressable>
 
-        <AppCard title={t('dailyInsight')} description={t('dailyInsightDesc')} onPress={() => navigation.navigate('insights')} />
+        <Pressable style={s.insightCard} onPress={() => navigation.navigate('insights')}>
+          <ImageBackground source={require('../assets/images/daily-insight.png')} style={[s.insightGradient, compact && s.insightGradientCompact]}>
+            <LinearGradient
+              colors={['rgba(5,15,48,0.84)', 'rgba(5,15,48,0.62)', 'rgba(5,15,48,0.20)']}
+              locations={[0, 0.58, 1]}
+              start={{ x: 0.5, y: 1 }}
+              end={{ x: 0.5, y: 0 }}
+              style={s.insightOverlay}
+            >
+              <View style={s.insightLeft}>
+                <Text style={s.insightTitle}>{t('dailyInsight')}</Text>
+                <Text style={s.insightHook}>{INSIGHTS[insightIndex].hook}</Text>
+                <Text style={s.insightMsg}>{INSIGHTS[insightIndex].message}</Text>
+              </View>
+            </LinearGradient>
+          </ImageBackground>
+        </Pressable>
         <View style={s.quickHeaderRow}>
-          <Text style={s.quickTitle}>Quick Sessions</Text>
-          <Pressable onPress={() => navigation.navigate('sessions')}>
-            <Text style={s.quickViewAll}>View all</Text>
-          </Pressable>
+          <Text style={s.quickTitle}>Shift Your Mood</Text>
+          <Text style={s.quickHint}>Swipe</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow}>
-          <Pressable style={[s.quickCard, s.quickCardStress]} onPress={() => navigation.navigate('sessions')}>
-            <View style={s.quickIconWrap}>
-              <Ionicons name='cloudy-night-outline' size={26} color='#B6B7FF' />
-            </View>
-            <Text style={s.quickCardTitle}>Stress</Text>
-            <Text style={s.quickCardTime}>5 min</Text>
-          </Pressable>
-
-          <Pressable style={[s.quickCard, s.quickCardAnxiety]} onPress={() => navigation.navigate('sessions')}>
-            <View style={s.quickIconWrap}>
-              <Ionicons name='water-outline' size={26} color='#8DE2E8' />
-            </View>
-            <Text style={s.quickCardTitle}>Anxiety</Text>
-            <Text style={s.quickCardTime}>5 min</Text>
-          </Pressable>
-
-          <Pressable style={[s.quickCard, s.quickCardFocus]} onPress={() => navigation.navigate('breathing', { technique: 'Box Breathing' })}>
-            <View style={s.quickIconWrap}>
-              <Ionicons name='radio-button-on-outline' size={26} color='#C8B3FF' />
-            </View>
-            <Text style={s.quickCardTitle}>Focus</Text>
-            <Text style={s.quickCardTime}>10 min</Text>
-          </Pressable>
-
-          <Pressable style={[s.quickCard, s.quickCardSleep]} onPress={() => navigation.navigate('sessions')}>
-            <View style={s.quickIconWrap}>
-              <Ionicons name='moon-outline' size={26} color='#D9CCFF' />
-            </View>
-            <Text style={s.quickCardTitle}>Sleep</Text>
-            <Text style={s.quickCardTime}>15 min</Text>
-          </Pressable>
+          {MOOD_SESSIONS.map((session) => (
+            <Pressable
+              key={session.title}
+              style={[s.quickCard, compact && s.quickCardCompact]}
+              onPress={() => navigation.navigate('breathing', { technique: session.technique })}
+            >
+              <LinearGradient
+                colors={session.gradient}
+                start={{ x: 0.5, y: 1 }}
+                end={{ x: 0.5, y: 0 }}
+                style={s.quickCardGradient}
+              >
+                <View style={s.quickIconWrap}>
+                  <Ionicons name={session.icon} size={26} color={session.tint} />
+                </View>
+                <Text style={s.quickCardTitle}>{session.title}</Text>
+                <Text style={s.quickCardTime}>{session.time}</Text>
+                <Text style={s.quickCardTechnique}>{session.technique}</Text>
+              </LinearGradient>
+            </Pressable>
+          ))}
         </ScrollView>
-        <View style={s.streakCard}>
+        <View style={[s.streakCard, compact && s.streakCardCompact]}>
           <View style={s.streakHeaderRow}>
-            <Text style={s.streakTitle}>Your streak</Text>
-            {streak >= 2 ? (
-              <Text style={s.streakCountInline}>
-                {streak} days in a row
-              </Text>
-            ) : null}
-          </View>
-          <View style={s.weekRow}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, idx) => (
-              <View key={`${d}-${idx}`} style={s.dayWrap}>
-                <View style={[s.dayDot, week[idx] && s.dayDotDone]} />
-                <Text style={s.dayLabel}>{d}</Text>
+            <View style={s.streakHeaderLeft}>
+              <Text style={s.streakTitle}>Your Streak</Text>
+              {streak >= 2 ? (
+                <Text style={s.streakDaysText}>
+                  <Text style={s.streakDaysNumber}>{streak}</Text>
+                  <Text style={s.streakDaysCopy}> days in a row</Text>
+                </Text>
+              ) : (
+                <Text style={s.streakDaysCopyMuted}>Keep going. Your streak starts at 2 days.</Text>
+              )}
+            </View>
+
+            <View style={s.streakRightWrap}>
+              <View style={s.streakFlame}>
+                <Ionicons name='flame' size={22} color='#A882FF' />
               </View>
-            ))}
+            </View>
+          </View>
+
+          <View style={s.weekRow}>
+            {weekDayLabels.map((d, idx) => {
+              const done = !!week[idx];
+              const isToday = idx === todayIndexMonFirst;
+              return (
+                <View key={`${d}-${idx}`} style={s.dayWrap}>
+                  <View style={[s.dayCircle, done && s.dayCircleDone, !done && isToday && s.dayCircleToday]}>
+                    {done ? <Ionicons name='checkmark' size={16} color='#95FFBF' /> : null}
+                  </View>
+                  <Text style={[s.dayLabel, isToday && s.dayLabelToday]}>{d}</Text>
+                </View>
+              );
+            })}
           </View>
         </View>
-      </ScrollView>
+      </View>
 
       <BottomNav active='home' navigate={(screen) => navigation.navigate(screen)} />
-    </LinearGradient>
+
+      <Modal visible={showReminderModal} transparent animationType='fade' onRequestClose={() => setShowReminderModal(false)}>
+        <View style={s.modalBackdrop}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>{language === 'es' ? 'Set breathing reminder' : 'Set breathing reminder'}</Text>
+            <Text style={s.modalSub}>
+              {language === 'es' ? 'Escoge una hora diaria para tu sesión.' : 'Choose a daily time for your session.'}
+            </Text>
+
+            <View style={s.timePickRow}>
+              <View style={s.timeBlock}>
+                <TouchableOpacity style={s.timeArrowBtn} onPress={() => setReminderHour((h) => (h + 23) % 24)}>
+                  <Ionicons name='chevron-up' size={18} color='#D5DEFF' />
+                </TouchableOpacity>
+                <Text style={s.timeValue}>{String(reminderHour).padStart(2, '0')}</Text>
+                <TouchableOpacity style={s.timeArrowBtn} onPress={() => setReminderHour((h) => (h + 1) % 24)}>
+                  <Ionicons name='chevron-down' size={18} color='#D5DEFF' />
+                </TouchableOpacity>
+                <Text style={s.timeLabel}>Hour</Text>
+              </View>
+
+              <Text style={s.timeDivider}>:</Text>
+
+              <View style={s.timeBlock}>
+                <TouchableOpacity style={s.timeArrowBtn} onPress={() => setReminderMinute((m) => (m + 55) % 60)}>
+                  <Ionicons name='chevron-up' size={18} color='#D5DEFF' />
+                </TouchableOpacity>
+                <Text style={s.timeValue}>{String(reminderMinute).padStart(2, '0')}</Text>
+                <TouchableOpacity style={s.timeArrowBtn} onPress={() => setReminderMinute((m) => (m + 5) % 60)}>
+                  <Ionicons name='chevron-down' size={18} color='#D5DEFF' />
+                </TouchableOpacity>
+                <Text style={s.timeLabel}>Min</Text>
+              </View>
+            </View>
+
+            <View style={s.modalActionRow}>
+              <TouchableOpacity style={s.modalGhostBtn} onPress={() => setShowReminderModal(false)}>
+                <Text style={s.modalGhostTxt}>{language === 'es' ? 'Cancelar' : 'Cancel'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.modalPrimaryBtn} onPress={saveReminder}>
+                <Text style={s.modalPrimaryTxt}>{language === 'es' ? 'Guardar' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {reminder ? (
+              <TouchableOpacity style={s.modalRemoveBtn} onPress={removeReminder}>
+                <Text style={s.modalRemoveTxt}>{language === 'es' ? 'Quitar recordatorio' : 'Remove reminder'}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </ScreenBackground>
   );
 }
 
 const s = StyleSheet.create({
-  c: { padding: 20, paddingTop: 56, paddingBottom: 24 },
-  greetWrap: { marginBottom: 16 },
-  greet: { color: '#fff', fontSize: 26, fontWeight: '700' },
-  helper: { color: '#D6DEFF', fontSize: 16, marginTop: 6 },
+  screenBg: { flex: 1 },
+  c: { flex: 1, paddingHorizontal: 16, paddingTop: 50, paddingBottom: 8 },
+  greetWrap: { marginBottom: 10 },
+  greet: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  helper: { color: '#D6DEFF', fontSize: 12, marginTop: 2 },
   heroCard: {
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.49)',
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 4 },
+    ...GLASS_CARD_BASE,
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  heroImage: { minHeight: 220, justifyContent: 'flex-end' },
+  heroImage: { minHeight: 142, justifyContent: 'flex-end' },
+  heroImageCompact: { minHeight: 126 },
   heroImageStyle: { borderRadius: 16 },
   heroOverlay: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 12,
   },
   heroContent: { width: '60%' },
-  heroTitle: { color: '#fff', fontSize: 30, fontWeight: '700' },
-  heroDesc: { color: '#D6DEFF', marginTop: 8, fontSize: 17, lineHeight: 24, maxWidth: 290 },
+  heroTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  heroDesc: { color: '#D6DEFF', marginTop: 4, fontSize: 12, lineHeight: 16, maxWidth: 240 },
   heroBtn: {
-    marginTop: 16,
+    marginTop: 8,
     alignSelf: 'flex-start',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.45)',
@@ -169,39 +381,73 @@ const s = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
   },
-  heroBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  quickHeaderRow: {
-    marginTop: 2,
+  heroBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  insightCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(153,182,255,0.45)',
     marginBottom: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  insightGradient: {
+    minHeight: 170,
+    justifyContent: 'center',
+  },
+  insightGradientCompact: {
+    minHeight: 90,
+  },
+  insightOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  insightLeft: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingRight: 48,
+    justifyContent: 'center',
+  },
+  insightTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  insightHook: { color: '#ECF2FF', fontSize: 12, fontWeight: '700', marginBottom: 3 },
+  insightMsg: { color: '#D6E2FF', fontSize: 11, lineHeight: 14, maxWidth: 320 },
+  quickHeaderRow: {
+    marginTop: 0,
+    marginBottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  quickTitle: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  quickViewAll: { color: '#8D7BFF', fontSize: 16, fontWeight: '500' },
-  quickRow: { paddingBottom: 14, gap: 10 },
+  quickTitle: { color: '#fff', fontSize: 16, fontWeight: '700' ,  marginTop: 10},
+  quickHint: { color: '#8D7BFF', fontSize: 12, fontWeight: '600' },
+  quickRow: { paddingVertical: 10, gap: 8, paddingRight: 8 },
   quickCard: {
-    width: 106,
-    minHeight: 168,
+    width: 124,
+    minHeight: 82,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(135,154,255,0.45)',
-    backgroundColor: 'rgba(20,45,110,0.45)',
-    paddingHorizontal: 12,
-    paddingBottom: 14,
-    marginRight: 10,
-    justifyContent: 'flex-end'
+    marginRight: 8,
+    marginVertical: 5,
+    overflow: 'hidden',
   },
-  quickCardStress: { backgroundColor: 'rgba(42,72,153,0.43)' },
-  quickCardAnxiety: { backgroundColor: 'rgba(20,95,126,0.38)' },
-  quickCardFocus: { backgroundColor: 'rgba(58,43,124,0.45)' },
-  quickCardSleep: { backgroundColor: 'rgba(55,39,120,0.42)' },
+  quickCardCompact: {
+    minHeight: 74,
+  },
+  quickCardGradient: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 10,
+    paddingBottom: 6,
+  },
   quickIconWrap: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 50,
-    height: 50,
+    top: 8,
+    left: 8,
+    width: 34,
+    height: 34,
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
@@ -209,35 +455,129 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.28)',
   },
-  quickCardTitle: { color: '#fff', fontSize: 17, fontWeight: '500' },
-  quickCardTime: { color: '#C7D3FB', marginTop: 4, fontSize: 12 },
+  quickCardTitle: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  quickCardTime: { color: '#C7D3FB', marginTop: 1, fontSize: 10 },
+  quickCardTechnique: { color: '#97A8DE', marginTop: 0, fontSize: 8, lineHeight: 10 },
   streakCard: {
-    marginBottom: 14,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.49)',
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    ...GLASS_CARD_BASE,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
+  streakCardCompact: { paddingTop: 8, paddingBottom: 8 },
   streakHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  streakTitle: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  streakCountInline: { color: '#D9E2FF', fontSize: 14, fontWeight: '600' },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  dayWrap: { alignItems: 'center', width: 30 },
-  dayDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 16,
+  streakHeaderLeft: { flex: 1, paddingRight: 12 },
+  streakTitle: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  streakDaysText: { marginTop: 2 },
+  streakDaysNumber: { color: '#9C83FF', fontSize: 28, fontWeight: '800' },
+  streakDaysCopy: { color: '#E2E9FF', fontSize: 15, fontWeight: '500' },
+  streakDaysCopyMuted: { color: '#C8D3FB', fontSize: 11, lineHeight: 14, marginTop: 4 },
+  streakRightWrap: { alignItems: 'center', justifyContent: 'center' },
+  streakFlame: {
+    width: 40,
+    height: 40,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    marginBottom: 5,
+    borderColor: 'rgba(149,131,255,0.65)',
+    backgroundColor: 'rgba(82,55,178,0.35)',
+    shadowColor: '#8D74FF',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
-  dayDotDone: { backgroundColor: '#81FFB6', borderColor: '#81FFB6' },
-  dayLabel: { color: '#C8D4FA', fontSize: 11 },
+  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 0 },
+  dayWrap: { alignItems: 'center', width: 32 },
+  dayCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(164,203,255,0.45)',
+    backgroundColor: 'rgba(93,120,169,0.18)',
+    marginBottom: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCircleDone: {
+    borderColor: 'rgba(138,255,190,0.72)',
+    backgroundColor: 'rgba(57,102,95,0.45)',
+  },
+  dayCircleToday: {
+    borderWidth: 2,
+    borderColor: '#9A80FF',
+    backgroundColor: 'rgba(110,76,209,0.25)',
+  },
+  dayLabel: { color: '#C8D4FA', fontSize: 10, marginTop: 1 },
+  dayLabelToday: { color: '#A690FF', fontWeight: '700' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(1,6,20,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    ...GLASS_CARD_BASE,
+    width: '100%',
+    maxWidth: 360,
+    padding: 18,
+  },
+  modalTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  modalSub: { color: '#C8D6FF', fontSize: 13, marginTop: 6 },
+  timePickRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 14,
+  },
+  timeBlock: { alignItems: 'center' },
+  timeArrowBtn: {
+    width: 34,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timeValue: { color: '#fff', fontSize: 30, fontWeight: '800', marginVertical: 6, minWidth: 52, textAlign: 'center' },
+  timeLabel: { color: '#AFC0F2', fontSize: 12, marginTop: 2 },
+  timeDivider: { color: '#fff', fontSize: 26, fontWeight: '700', marginTop: -14 },
+  modalActionRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, gap: 10 },
+  modalGhostBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  modalGhostTxt: { color: '#D7E2FF', fontSize: 14, fontWeight: '700' },
+  modalPrimaryBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: 'rgba(124,122,255,0.55)',
+  },
+  modalPrimaryTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  modalRemoveBtn: {
+    marginTop: 12,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  modalRemoveTxt: { color: '#FFB9C6', fontSize: 13, fontWeight: '700' },
 });

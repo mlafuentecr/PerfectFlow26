@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { GLASS_CARD_BASE } from '../services/uiStyles';
 
 export default function EmotionCard({
   title,
@@ -26,16 +27,9 @@ export default function EmotionCard({
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 16,
+    ...GLASS_CARD_BASE,
     padding: 16,
-    borderColor: 'rgba(255,255,255,0.49)',
-    borderWidth: 1,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 4 },
   },
   e: { fontSize: 30 },
   t: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 8 },

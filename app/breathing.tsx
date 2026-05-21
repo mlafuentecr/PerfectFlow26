@@ -126,7 +126,11 @@ const GUIDE_AUDIO = {
   },
   es: {
     intro: require('../assets/sounds/audio-guide/es/es-intro.mp3'),
-    steps: {} as Partial<Record<'Inhale' | 'Exhale' | 'Hold', any>>,
+    steps: {
+      Inhale: require('../assets/sounds/audio-guide/es/Inhale.mp3'),
+      Exhale: require('../assets/sounds/audio-guide/es/Exhale.mp3'),
+      Hold: require('../assets/sounds/audio-guide/es/hold.mp3'),
+    },
     numbers: {
       1: require('../assets/sounds/audio-guide/es/uno.mp3'),
       2: require('../assets/sounds/audio-guide/es/dos.mp3'),
@@ -378,15 +382,16 @@ export default function BreathingScreen({ navigation, route }: any) {
     }
   };
 
-  const playGuideClip = async (src: any, options?: { interrupt?: boolean }): Promise<number> => {
+  const playGuideClip = async (src: any, options?: { interrupt?: boolean; volume?: number }): Promise<number> => {
     const interrupt = options?.interrupt ?? true;
+    const volume = options?.volume ?? 0.95;
     if (interrupt) {
       await stopGuideClip();
     }
     const { sound, status } = await Audio.Sound.createAsync(src, {
       shouldPlay: true,
       isLooping: false,
-      volume: isMuted ? 0 : 0.95,
+      volume: isMuted ? 0 : volume,
     });
     guideObjRef.current = sound;
     setGuideObj(sound);
@@ -464,12 +469,13 @@ export default function BreathingScreen({ navigation, route }: any) {
         if (left === phase.seconds) {
           const stepClip = pack.steps[phase.name as 'Inhale' | 'Exhale' | 'Hold'];
           if (stepClip) {
-            await playGuideClip(stepClip);
+            await playGuideClip(stepClip, { volume: 0.95 });
+            return;
           }
         }
         const numberClip = pack.numbers[left];
         if (numberClip) {
-          await playGuideClip(numberClip);
+          await playGuideClip(numberClip, { volume: 0.7 });
         }
       } catch (error) {
         console.error('guide cue error', error);
