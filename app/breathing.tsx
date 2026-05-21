@@ -101,12 +101,50 @@ const SOUNDS = [
   { key: 'bell2', label: 'Bell', icon: require('../images/icons_sounds/bell.png'), src: require('../sounds/bell2.mp3') },
 ] as const;
 
-const GUIDE_AUDIO_INTRO = {
-  en: require('../assets/sounds/audio-guide/intro.mp3'),
-  es: require('../assets/sounds/audio-guide/es/es-intro.mp3'),
+const GUIDE_AUDIO = {
+  en: {
+    intro: require('../assets/sounds/audio-guide/intro.mp3'),
+    steps: {
+      Inhale: require('../assets/sounds/audio-guide/Inhale.mp3'),
+      Exhale: require('../assets/sounds/audio-guide/Exhale.mp3'),
+      Hold: require('../assets/sounds/audio-guide/Hold.mp3'),
+    },
+    numbers: {
+      1: require('../assets/sounds/audio-guide/One.mp3'),
+      2: require('../assets/sounds/audio-guide/Two.mp3'),
+      3: require('../assets/sounds/audio-guide/three.mp3'),
+      4: require('../assets/sounds/audio-guide/four.mp3'),
+      5: require('../assets/sounds/audio-guide/five.mp3'),
+      6: require('../assets/sounds/audio-guide/six.mp3'),
+      7: require('../assets/sounds/audio-guide/seven.mp3'),
+      8: require('../assets/sounds/audio-guide/eight.mp3'),
+      9: require('../assets/sounds/audio-guide/Nine.mp3'),
+      10: require('../assets/sounds/audio-guide/ten.mp3'),
+    } as Record<number, any>,
+    done: require('../assets/sounds/audio-guide/You did it..mp3'),
+    feel: require('../assets/sounds/audio-guide/How do you feel?.mp3'),
+  },
+  es: {
+    intro: require('../assets/sounds/audio-guide/es/es-intro.mp3'),
+    steps: {} as Partial<Record<'Inhale' | 'Exhale' | 'Hold', any>>,
+    numbers: {
+      1: require('../assets/sounds/audio-guide/es/uno.mp3'),
+      2: require('../assets/sounds/audio-guide/es/dos.mp3'),
+      3: require('../assets/sounds/audio-guide/es/tres.mp3'),
+      4: require('../assets/sounds/audio-guide/es/cuatro.mp3'),
+      5: require('../assets/sounds/audio-guide/es/cinco.mp3'),
+      6: require('../assets/sounds/audio-guide/es/seis.mp3'),
+      7: require('../assets/sounds/audio-guide/es/siete.mp3'),
+      8: require('../assets/sounds/audio-guide/es/ocho.mp3'),
+      9: require('../assets/sounds/audio-guide/es/nueve.mp3'),
+      10: require('../assets/sounds/audio-guide/es/diez.mp3'),
+    } as Record<number, any>,
+    done: require('../assets/sounds/audio-guide/es/lo-hiciste.mp3'),
+    feel: require('../assets/sounds/audio-guide/es/como te sientes.mp3'),
+  },
 } as const;
 
-const GUIDE_INTRO_OFFSET_MS = 8000;
+const GUIDE_INTRO_OFFSET_FALLBACK_MS = 5000;
 
 export default function BreathingScreen({ navigation, route }: any) {
   const { language } = useI18n();
@@ -131,7 +169,6 @@ export default function BreathingScreen({ navigation, route }: any) {
   const [soundPlaying, setSoundPlaying] = useState(false);
   const [guideObj, setGuideObj] = useState<Audio.Sound | null>(null);
   const [guidePlaying, setGuidePlaying] = useState(false);
-  const [guideTrackKey, setGuideTrackKey] = useState<string>('');
   const [guideEnabled, setGuideEnabled] = useState(false);
   const [guidedMode, setGuidedMode] = useState(false);
   const [guideSyncPending, setGuideSyncPending] = useState(false);
@@ -146,6 +183,7 @@ export default function BreathingScreen({ navigation, route }: any) {
   const guideObjRef = useRef<Audio.Sound | null>(null);
   const activeSoundsRef = useRef<Array<{ key: (typeof SOUNDS)[number]['key']; sound: Audio.Sound; volume: number }>>([]);
   const guideStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const guideCueKeyRef = useRef<string>('');
 
   useEffect(() => {
     soundObjRef.current = soundObj;
@@ -236,7 +274,6 @@ export default function BreathingScreen({ navigation, route }: any) {
           // Ignore stale unloaded sound instances.
         }
         setGuidePlaying(false);
-        setGuideEnabled(false);
         setGuidedMode(false);
       }
       for (const item of activeSounds) {
@@ -321,86 +358,143 @@ export default function BreathingScreen({ navigation, route }: any) {
     }
   };
 
+  const getGuideLang = (): 'en' | 'es' => (
+    String(language).toLowerCase().startsWith('es') ? 'es' : 'en'
+  );
+
+  const stopGuideClip = async () => {
+    if (!guideObjRef.current) return;
+    try {
+      const st = await guideObjRef.current.getStatusAsync();
+      if (st.isLoaded) {
+        await guideObjRef.current.stopAsync();
+        await guideObjRef.current.unloadAsync();
+      }
+    } catch {
+      // Ignore stale unloaded sound instances.
+    } finally {
+      guideObjRef.current = null;
+      setGuideObj(null);
+    }
+  };
+
+  const playGuideClip = async (src: any, options?: { interrupt?: boolean }): Promise<number> => {
+    const interrupt = options?.interrupt ?? true;
+    if (interrupt) {
+      await stopGuideClip();
+    }
+    const { sound, status } = await Audio.Sound.createAsync(src, {
+      shouldPlay: true,
+      isLooping: false,
+      volume: isMuted ? 0 : 0.95,
+    });
+    guideObjRef.current = sound;
+    setGuideObj(sound);
+    setGuidePlaying(true);
+    sound.setOnPlaybackStatusUpdate((playStatus) => {
+      if (!playStatus.isLoaded) return;
+      if (playStatus.didJustFinish) {
+        void sound.unloadAsync().catch(() => {});
+        if (guideObjRef.current === sound) {
+          guideObjRef.current = null;
+          setGuideObj(null);
+        }
+      }
+    });
+    if (status.isLoaded && typeof status.durationMillis === 'number') {
+      return status.durationMillis;
+    }
+    return 0;
+  };
+
   const toggleGuide = async () => {
     try {
-      const langKey = String(language).toLowerCase().startsWith('es') ? 'es' : 'en';
-      const src = GUIDE_AUDIO_INTRO[langKey as 'en' | 'es'] ?? GUIDE_AUDIO_INTRO.en;
-      if (!src) return;
-      const wantedKey = `${langKey}:intro`;
-
-      const introOffset = GUIDE_INTRO_OFFSET_MS;
-      const scheduleVisualStart = () => {
-        if (guideStartTimeout) clearTimeout(guideStartTimeout);
-        setGuideSyncPending(true);
-        const timeout = setTimeout(() => {
-          setCompleted(false);
-          setPhaseIndex(0);
-          setLeft(pattern[0].seconds);
-          setSessionLeft(sessionMinutes * 60);
-          setRunning(true);
-          setGuideSyncPending(false);
-        }, introOffset);
-        setGuideStartTimeout(timeout);
-      };
-
-      if (isMuted) {
-        setIsMuted(false);
-      }
-
-      if (!guideObj || guideTrackKey !== wantedKey) {
-        if (guideObj) {
-          await guideObj.stopAsync();
-          await guideObj.unloadAsync();
-        }
-        const { sound } = await Audio.Sound.createAsync(src, {
-          shouldPlay: true,
-          isLooping: false,
-          volume: 0.95,
-        });
-        await sound.setVolumeAsync(0.95);
-        await sound.setStatusAsync({ shouldPlay: true, volume: 0.95, positionMillis: 0 });
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (!status.isLoaded) return;
-          if (status.didJustFinish) {
-            setGuidePlaying(false);
-            setGuidedMode(false);
-            setGuideSyncPending(false);
-            setRunning(false);
-          }
-        });
-        setGuideObj(sound);
-        setGuidePlaying(true);
-        setGuideTrackKey(wantedKey);
-        setGuideEnabled(true);
-        setGuidedMode(true);
-        scheduleVisualStart();
+      if (guideEnabled) {
+        if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
+        setGuideStartTimeout(null);
+        setGuideSyncPending(false);
+        setGuideEnabled(false);
+        setGuidedMode(false);
+        setGuidePlaying(false);
+        guideCueKeyRef.current = '';
+        await stopGuideClip();
         return;
       }
 
-      const status = await guideObj.getStatusAsync();
-      if (!status.isLoaded) return;
+      const lang = getGuideLang();
+      const pack = GUIDE_AUDIO[lang];
+      setGuideEnabled(true);
+      setGuidedMode(true);
+      setGuidePlaying(true);
+      guideCueKeyRef.current = '';
+      if (isMuted) setIsMuted(false);
 
-      if (status.isPlaying) {
-        await guideObj.pauseAsync();
-        setGuidePlaying(false);
-        setGuideEnabled(true);
-        setGuidedMode(false);
-        if (guideStartTimeout) clearTimeout(guideStartTimeout);
+      const introMs = await playGuideClip(pack.intro);
+      const delayMs = introMs > 0 ? introMs : GUIDE_INTRO_OFFSET_FALLBACK_MS;
+
+      if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
+      setGuideSyncPending(true);
+      const timeout = setTimeout(() => {
+        setCompleted(false);
+        setPhaseIndex(0);
+        setLeft(pattern[0].seconds);
+        setSessionLeft(sessionMinutes * 60);
+        setRunning(true);
         setGuideSyncPending(false);
-        setRunning(false);
-      } else {
-        await guideObj.setVolumeAsync(0.95);
-        await guideObj.playAsync();
-        setGuidePlaying(true);
-        setGuideEnabled(true);
-        setGuidedMode(true);
-        if (!completed) scheduleVisualStart();
-      }
+      }, delayMs);
+      setGuideStartTimeout(timeout);
     } catch (error: any) {
       console.error('toggleGuide error', error);
       Alert.alert('Audio Error', error?.message ?? 'Could not play voice guide.');
     }
   };
+
+  useEffect(() => {
+    if (!guideEnabled || !guidedMode || !running || showTechniqueMenu || guideSyncPending || completed) return;
+    const phase = pattern[phaseIndex];
+    const cueKey = `${phaseIndex}:${left}`;
+    if (guideCueKeyRef.current === cueKey) return;
+    guideCueKeyRef.current = cueKey;
+
+    const lang = getGuideLang();
+    const pack = GUIDE_AUDIO[lang];
+
+    const playCue = async () => {
+      try {
+        if (left === phase.seconds) {
+          const stepClip = pack.steps[phase.name as 'Inhale' | 'Exhale' | 'Hold'];
+          if (stepClip) {
+            await playGuideClip(stepClip);
+          }
+        }
+        const numberClip = pack.numbers[left];
+        if (numberClip) {
+          await playGuideClip(numberClip);
+        }
+      } catch (error) {
+        console.error('guide cue error', error);
+      }
+    };
+
+    void playCue();
+  }, [guideEnabled, guidedMode, running, showTechniqueMenu, guideSyncPending, completed, pattern, phaseIndex, left, language]);
+
+  useEffect(() => {
+    if (!completed || !guideEnabled) return;
+    const lang = getGuideLang();
+    const pack = GUIDE_AUDIO[lang];
+    const playEnd = async () => {
+      try {
+        await playGuideClip(pack.done);
+        setTimeout(() => {
+          void playGuideClip(pack.feel);
+        }, 900);
+      } catch (error) {
+        console.error('guide ending cue error', error);
+      }
+    };
+    void playEnd();
+  }, [completed, guideEnabled, language]);
 
   const addOrToggleSound = async (key: (typeof SOUNDS)[number]['key']) => {
     try {
@@ -418,6 +512,22 @@ export default function BreathingScreen({ navigation, route }: any) {
         const next = activeSounds.filter((item) => item.key !== key);
         setActiveSounds(next);
         await saveSoundPrefs(next.map((x) => ({ key: x.key, volume: x.volume })));
+
+        // If no layered sounds remain, also stop the legacy base loop to avoid ghost audio.
+        if (next.length === 0 && soundObj) {
+          try {
+            const baseStatus = await soundObj.getStatusAsync();
+            if (baseStatus.isLoaded) {
+              await soundObj.stopAsync();
+              await soundObj.unloadAsync();
+            }
+          } catch {
+            // Ignore stale unloaded sound instances.
+          } finally {
+            setSoundObj(null);
+            setSoundPlaying(false);
+          }
+        }
         return;
       }
 
@@ -425,6 +535,22 @@ export default function BreathingScreen({ navigation, route }: any) {
 
       const picked = SOUNDS.find((s) => s.key === key);
       if (!picked) return;
+
+      // Stop base loop when user starts using layered sound mixer.
+      if (soundObj) {
+        try {
+          const baseStatus = await soundObj.getStatusAsync();
+          if (baseStatus.isLoaded) {
+            await soundObj.stopAsync();
+            await soundObj.unloadAsync();
+          }
+        } catch {
+          // Ignore stale unloaded sound instances.
+        } finally {
+          setSoundObj(null);
+          setSoundPlaying(false);
+        }
+      }
 
       const { sound } = await Audio.Sound.createAsync(picked.src, {
         isLooping: true,
@@ -578,21 +704,25 @@ export default function BreathingScreen({ navigation, route }: any) {
             style={[s.startBtn, running && s.startBtnPaused]}
             onPress={async () => {
               const next = !running;
-              if (guidedMode && next === false) {
-                if (guideObj) {
-                  await guideObj.pauseAsync();
-                  setGuidePlaying(false);
-                  setGuidedMode(false);
-                }
+              if (guideEnabled && next === false) {
+                await stopGuideClip();
+                setGuidePlaying(false);
+                setGuidedMode(false);
               }
               if (completed) {
                 setCompleted(false);
                 setSessionLeft(sessionMinutes * 60);
                 setPhaseIndex(0);
                 setLeft(pattern[0].seconds);
+                guideCueKeyRef.current = '';
               }
               setRunning(next);
-              if (next && !soundObj) await playOrSwitchSound();
+              if (next && guideEnabled) {
+                setGuidePlaying(true);
+                setGuidedMode(true);
+                guideCueKeyRef.current = '';
+              }
+              if (next && !soundObj && activeSounds.length === 0) await playOrSwitchSound();
             }}
           >
             <Text style={s.startBtnText}>{running ? 'Pause' : 'Start'}</Text>
