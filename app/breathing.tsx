@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -142,16 +142,36 @@ export default function BreathingScreen({ navigation, route }: any) {
   const currentSound = SOUNDS.find((s) => s.key === soundKey) ?? SOUNDS[0];
   const hasAnySoundSelected = activeSounds.length > 0 || !!soundObj;
   const [guideStartTimeout, setGuideStartTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const soundObjRef = useRef<Audio.Sound | null>(null);
+  const guideObjRef = useRef<Audio.Sound | null>(null);
+  const activeSoundsRef = useRef<Array<{ key: (typeof SOUNDS)[number]['key']; sound: Audio.Sound; volume: number }>>([]);
+  const guideStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    soundObjRef.current = soundObj;
+  }, [soundObj]);
+
+  useEffect(() => {
+    guideObjRef.current = guideObj;
+  }, [guideObj]);
+
+  useEffect(() => {
+    activeSoundsRef.current = activeSounds;
+  }, [activeSounds]);
+
+  useEffect(() => {
+    guideStartTimeoutRef.current = guideStartTimeout;
+  }, [guideStartTimeout]);
 
   useEffect(() => {
     void Audio.setIsEnabledAsync(true);
     void Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
       staysActiveInBackground: false,
-      shouldDuckAndroid: false,
+      shouldDuckAndroid: true,
       playThroughEarpieceAndroid: false,
-      interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
-      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+      interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+      interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
     });
     (async () => {
       setBgKey(await getBreathBackgroundKey());
@@ -209,13 +229,23 @@ export default function BreathingScreen({ navigation, route }: any) {
         setSoundPlaying(false);
       }
       if (guideObj) {
-        await guideObj.stopAsync();
+        try {
+          const st = await guideObj.getStatusAsync();
+          if (st.isLoaded) await guideObj.stopAsync();
+        } catch {
+          // Ignore stale unloaded sound instances.
+        }
         setGuidePlaying(false);
         setGuideEnabled(false);
         setGuidedMode(false);
       }
       for (const item of activeSounds) {
-        await item.sound.stopAsync();
+        try {
+          const st = await item.sound.getStatusAsync();
+          if (st.isLoaded) await item.sound.stopAsync();
+        } catch {
+          // Ignore stale unloaded sound instances.
+        }
       }
     };
     void finish();
@@ -231,14 +261,14 @@ export default function BreathingScreen({ navigation, route }: any) {
 
   useEffect(() => {
     return () => {
-      if (guideStartTimeout) clearTimeout(guideStartTimeout);
-      if (soundObj) void soundObj.unloadAsync();
-      if (guideObj) void guideObj.unloadAsync();
-      activeSounds.forEach((item) => {
-        void item.sound.unloadAsync();
+      if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
+      if (soundObjRef.current) void soundObjRef.current.unloadAsync().catch(() => {});
+      if (guideObjRef.current) void guideObjRef.current.unloadAsync().catch(() => {});
+      activeSoundsRef.current.forEach((item) => {
+        void item.sound.unloadAsync().catch(() => {});
       });
     };
-  }, [soundObj, guideObj, activeSounds, guideStartTimeout]);
+  }, []);
 
   const playOrSwitchSound = async (key?: (typeof SOUNDS)[number]['key']) => {
     const picked = SOUNDS.find((s) => s.key === (key ?? soundKey)) ?? currentSound;
@@ -251,11 +281,10 @@ export default function BreathingScreen({ navigation, route }: any) {
 
     const { sound } = await Audio.Sound.createAsync(picked.src, {
       isLooping: true,
-      shouldPlay: false,
+      shouldPlay: true,
       volume: 0.65,
     });
-    await sound.setStatusAsync({ shouldPlay: false, isLooping: true, volume: 0.65, positionMillis: 0 });
-    await sound.playFromPositionAsync(0);
+    await sound.setStatusAsync({ shouldPlay: true, isLooping: true, volume: 0.65, positionMillis: 0 });
     setSoundObj(sound);
     setSoundPlaying(true);
     setIsMuted(false);
@@ -324,12 +353,12 @@ export default function BreathingScreen({ navigation, route }: any) {
           await guideObj.unloadAsync();
         }
         const { sound } = await Audio.Sound.createAsync(src, {
-          shouldPlay: false,
+          shouldPlay: true,
           isLooping: false,
           volume: 0.95,
         });
         await sound.setVolumeAsync(0.95);
-        await sound.playFromPositionAsync(0);
+        await sound.setStatusAsync({ shouldPlay: true, volume: 0.95, positionMillis: 0 });
         sound.setOnPlaybackStatusUpdate((status) => {
           if (!status.isLoaded) return;
           if (status.didJustFinish) {
@@ -399,15 +428,10 @@ export default function BreathingScreen({ navigation, route }: any) {
 
       const { sound } = await Audio.Sound.createAsync(picked.src, {
         isLooping: true,
-        shouldPlay: false,
+        shouldPlay: true,
         volume: 0.7,
       });
-      await sound.setStatusAsync({ shouldPlay: false, isLooping: true, volume: 0.7, positionMillis: 0 });
-      await sound.playFromPositionAsync(0);
-      const createdStatus = await sound.getStatusAsync();
-      if (createdStatus.isLoaded && !createdStatus.isPlaying) {
-        await sound.playAsync();
-      }
+      await sound.setStatusAsync({ shouldPlay: true, isLooping: true, volume: 0.7, positionMillis: 0 });
       const next = [...activeSounds, { key, sound, volume: 0.7 }];
       setActiveSounds(next);
       await saveSoundPrefs(next.map((x) => ({ key: x.key, volume: x.volume })));
