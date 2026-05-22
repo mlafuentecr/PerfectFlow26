@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GLASS_CARD_SOFT } from '../services/uiStyles';
+import { GLASS_CARD_SOFT, TYPE_SCALE } from '../services/uiStyles';
 
 type Props = {
   title?: string;
@@ -59,6 +59,6 @@ const s = StyleSheet.create({
     borderColor: 'rgba(190,169,255,0.65)',
     backgroundColor: 'rgba(96,70,183,0.24)',
   },
-  title: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  subtitle: { color: '#CAD7FF', fontSize: 13, marginTop: 2 },
+  title: { color: '#FFFFFF', fontSize: TYPE_SCALE.body + 2, fontWeight: '700' },
+  subtitle: { color: '#CAD7FF', fontSize: TYPE_SCALE.subtitle, marginTop: 2 },
 });

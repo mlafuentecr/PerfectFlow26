@@ -44,7 +44,7 @@ const STRINGS = {
     faqs: 'FAQs',
     terms: 'Terms & Conditions',
     privacy: 'Privacy Policy',
-    acknowledgments: 'Acknowledgments',
+    acknowledgments: 'Proven Benefits',
     legalSupport: 'Legal & Support',
   },
   es: {
@@ -85,7 +85,7 @@ const STRINGS = {
     faqs: 'Preguntas frecuentes',
     terms: 'Términos y condiciones',
     privacy: 'Política de privacidad',
-    acknowledgments: 'Reconocimientos',
+    acknowledgments: 'Beneficios comprobados',
     legalSupport: 'Legal y soporte',
   },
 } as const;

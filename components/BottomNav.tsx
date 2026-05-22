@@ -3,7 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useI18n } from '../services/i18n';
-import { GLASS_CARD_BASE } from '../services/uiStyles';
+import { GLASS_CARD_BASE, TYPE_SCALE } from '../services/uiStyles';
 
 type Tab = 'home' | 'breathing' | 'insights' | 'sessions' | 'profile';
 type TabScreen = Tab;
@@ -58,7 +58,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   item: { alignItems: 'center', width: 64 },
-  label: { color: '#D9E2FF', fontSize: 12, marginTop: 4 },
+  label: { color: '#D9E2FF', fontSize: TYPE_SCALE.caption, marginTop: 4 },
   labelActive: { color: '#8D7BFF' },
   dot: { width: 6, height: 6, borderRadius: 6, backgroundColor: '#8D7BFF', marginTop: 4 },
 });

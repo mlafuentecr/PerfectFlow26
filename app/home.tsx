@@ -18,14 +18,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../App';
 import BottomNav from '../components/BottomNav';
-import ReminderButton from '../components/ReminderButton';
 import ScreenBackground from '../components/ScreenBackground';
 import { auth } from '../services/firebase';
 import { useI18n } from '../services/i18n';
 import { getProfileName } from '../services/profile';
 import { getCurrentStreak, getWeekCompletion } from '../services/streak';
 import { BREATH_BACKGROUNDS, getBreathBackgroundKey } from '../services/breathingPrefs';
-import { GLASS_CARD_BASE } from '../services/uiStyles';
+import { GLASS_CARD_BASE, TYPE_SCALE } from '../services/uiStyles';
 import {
   clearDailyReminder,
   DailyReminder,
@@ -127,12 +126,6 @@ export default function HomeScreen({ navigation }: Props) {
   const weekDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const jsDay = new Date().getDay(); // Sun=0..Sat=6
   const todayIndexMonFirst = (jsDay + 6) % 7;
-  const reminderSubtitle = reminder
-    ? `${language === 'es' ? 'Diario a las' : 'Daily at'} ${formatReminderTime(reminder.hour, reminder.minute, language)}`
-    : language === 'es'
-      ? 'Recibe un recordatorio para respirar y resetear.'
-      : 'Get a gentle nudge to breathe and reset.';
-
   const openReminderModal = () => {
     if (reminder) {
       setReminderHour(reminder.hour);
@@ -176,15 +169,19 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <ScreenBackground style={s.screenBg} backgroundKey={heroBgKey} syncOnFocus={false}>
       <View style={s.c}>
-        <View style={s.greetWrap}>
-          <Text style={s.greet}>{t('greeting')}{name ? `, ${name}` : ''}</Text>
-          <Text style={s.helper}>{t('motivator')}</Text>
+        <View style={s.topRow}>
+          <View style={s.greetWrap}>
+            <Text style={s.greet}>{t('greeting')}</Text>
+            <Text style={s.nameText} numberOfLines={1} ellipsizeMode='tail'>
+              {name || 'PerfectFlow'}
+            </Text>
+            <Text style={s.helper}>{t('motivator')}</Text>
+          </View>
+          <TouchableOpacity style={[s.reminderIconBtn, reminder && s.reminderIconBtnActive]} onPress={openReminderModal}>
+            <Ionicons name='notifications' size={22} color={reminder ? '#B9A7FF' : '#EEF3FF'} />
+            {reminder ? <View style={s.reminderDot} /> : null}
+          </TouchableOpacity>
         </View>
-        <ReminderButton
-          enabled={!!reminder}
-          subtitle={reminderSubtitle}
-          onPress={openReminderModal}
-        />
 
         <Pressable style={s.heroCard} onPress={() => navigation.navigate('breathing')}>
           <ImageBackground source={heroBg.src} style={[s.heroImage, compact && s.heroImageCompact]} imageStyle={s.heroImageStyle}>
@@ -216,18 +213,19 @@ export default function HomeScreen({ navigation }: Props) {
               style={s.insightOverlay}
             >
               <View style={s.insightLeft}>
-                <Text style={s.insightTitle}>{t('dailyInsight')}</Text>
+                <Text style={s.quickTitle}>{t('dailyInsight')}</Text>
                 <Text style={s.insightHook}>{INSIGHTS[insightIndex].hook}</Text>
                 <Text style={s.insightMsg}>{INSIGHTS[insightIndex].message}</Text>
               </View>
             </LinearGradient>
           </ImageBackground>
         </Pressable>
+        
         <View style={s.quickHeaderRow}>
           <Text style={s.quickTitle}>Shift Your Mood</Text>
           <Text style={s.quickHint}>Swipe</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow} style={s.quickRowScroll}>
           {MOOD_SESSIONS.map((session) => (
             <Pressable
               key={session.title}
@@ -347,13 +345,43 @@ export default function HomeScreen({ navigation }: Props) {
 
 const s = StyleSheet.create({
   screenBg: { flex: 1 },
-  c: { flex: 1, paddingHorizontal: 16, paddingTop: 50, paddingBottom: 8 },
-  greetWrap: { marginBottom: 10 },
-  greet: { color: '#fff', fontSize: 18, fontWeight: '600' },
-  helper: { color: '#D6DEFF', fontSize: 12, marginTop: 2 },
+  c: { flex: 1, paddingHorizontal: 16, paddingTop: 50, paddingBottom: 2 },
+  topRow: {
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  greetWrap: { maxWidth: '80%', paddingRight: 8 },
+  greet: { color: '#DCE6FF', fontSize: TYPE_SCALE.subtitle, fontWeight: '500' },
+  nameText: { color: '#fff', fontSize: 24, lineHeight: 38, fontWeight: '700', marginTop: 1 },
+  helper: { color: '#D6DEFF', fontSize: TYPE_SCALE.subtitle, marginTop: 2 },
+  reminderIconBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  reminderIconBtnActive: {
+    borderColor: 'rgba(189,168,255,0.9)',
+    backgroundColor: 'rgba(106,84,196,0.28)',
+  },
+  reminderDot: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#A992FF',
+  },
   heroCard: {
     ...GLASS_CARD_BASE,
-    marginBottom: 8,
+    marginBottom: 15,
     overflow: 'hidden',
   },
   heroImage: { minHeight: 142, justifyContent: 'flex-end' },
@@ -365,8 +393,8 @@ const s = StyleSheet.create({
     padding: 12,
   },
   heroContent: { width: '60%' },
-  heroTitle: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  heroDesc: { color: '#D6DEFF', marginTop: 4, fontSize: 12, lineHeight: 16, maxWidth: 240 },
+  heroTitle: { color: '#fff', fontSize: TYPE_SCALE.title, fontWeight: '700' },
+  heroDesc: { color: '#D6DEFF', marginTop: 4, fontSize: TYPE_SCALE.body, lineHeight: 18, maxWidth: 240 },
   heroBtn: {
     marginTop: 8,
     alignSelf: 'flex-start',
@@ -386,15 +414,15 @@ const s = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(153,182,255,0.45)',
-    marginBottom: 8,
+    marginBottom: 10,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 26,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 2 },
   },
   insightGradient: {
-    minHeight: 170,
+    minHeight: 130,
     justifyContent: 'center',
   },
   insightGradientCompact: {
@@ -411,36 +439,36 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   insightTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  insightHook: { color: '#ECF2FF', fontSize: 12, fontWeight: '700', marginBottom: 3 },
-  insightMsg: { color: '#D6E2FF', fontSize: 11, lineHeight: 14, maxWidth: 320 },
+  insightHook: { color: '#ECF2FF', fontSize: TYPE_SCALE.subtitle, fontWeight: '700', marginBottom: 3 },
+  insightMsg: { color: '#D6E2FF', fontSize: TYPE_SCALE.body, lineHeight: 18, maxWidth: 320 },
   quickHeaderRow: {
-    marginTop: 0,
-    marginBottom: 6,
+    marginTop: 2,
+    marginBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  quickTitle: { color: '#fff', fontSize: 16, fontWeight: '700' ,  marginTop: 10},
-  quickHint: { color: '#8D7BFF', fontSize: 12, fontWeight: '600' },
-  quickRow: { paddingVertical: 10, gap: 8, paddingRight: 8 },
+  quickTitle: { color: '#fff', fontSize: TYPE_SCALE.title, fontWeight: '700', marginTop: 0 },
+  quickHint: { color: '#8D7BFF', fontSize: TYPE_SCALE.subtitle, fontWeight: '600' },
+  quickRowScroll: { marginBottom: -24 },
+  quickRow: { paddingTop: 2, paddingBottom: 0, gap: 8, paddingRight: 8 },
   quickCard: {
     width: 124,
-    minHeight: 82,
+    height: 155,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(135,154,255,0.45)',
     marginRight: 8,
-    marginVertical: 5,
+    marginTop: 0,
+    marginBottom: 0,
     overflow: 'hidden',
   },
-  quickCardCompact: {
-    minHeight: 74,
-  },
+  quickCardCompact: { height: 145 },
   quickCardGradient: {
     flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 10,
-    paddingBottom: 6,
+    paddingBottom: 8,
   },
   quickIconWrap: {
     position: 'absolute',
@@ -455,12 +483,13 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.28)',
   },
-  quickCardTitle: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  quickCardTime: { color: '#C7D3FB', marginTop: 1, fontSize: 10 },
-  quickCardTechnique: { color: '#97A8DE', marginTop: 0, fontSize: 8, lineHeight: 10 },
+  quickCardTitle: { color: '#fff', fontSize: TYPE_SCALE.body, fontWeight: '600' },
+  quickCardTime: { color: '#C7D3FB', marginTop: 1, fontSize: TYPE_SCALE.subtitle },
+  quickCardTechnique: { color: '#97A8DE', marginTop: 0, fontSize: TYPE_SCALE.subtitle, lineHeight: 13, marginBottom: 0 },
   streakCard: {
     ...GLASS_CARD_BASE,
-    marginBottom: 6,
+    marginTop: -20,
+    marginBottom: 10,
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 10,
@@ -477,7 +506,7 @@ const s = StyleSheet.create({
   streakDaysText: { marginTop: 2 },
   streakDaysNumber: { color: '#9C83FF', fontSize: 28, fontWeight: '800' },
   streakDaysCopy: { color: '#E2E9FF', fontSize: 15, fontWeight: '500' },
-  streakDaysCopyMuted: { color: '#C8D3FB', fontSize: 11, lineHeight: 14, marginTop: 4 },
+  streakDaysCopyMuted: { color: '#C8D3FB', fontSize: TYPE_SCALE.subtitle, lineHeight: 16, marginTop: 4 },
   streakRightWrap: { alignItems: 'center', justifyContent: 'center' },
   streakFlame: {
     width: 40,
@@ -515,7 +544,7 @@ const s = StyleSheet.create({
     borderColor: '#9A80FF',
     backgroundColor: 'rgba(110,76,209,0.25)',
   },
-  dayLabel: { color: '#C8D4FA', fontSize: 10, marginTop: 1 },
+  dayLabel: { color: '#C8D4FA', fontSize: TYPE_SCALE.subtitle, marginTop: 1 },
   dayLabelToday: { color: '#A690FF', fontWeight: '700' },
   modalBackdrop: {
     flex: 1,

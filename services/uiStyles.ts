@@ -23,3 +23,10 @@ export const GLASS_CARD_DARK = {
   shadowRadius: 24,
   shadowOffset: { width: 0, height: 10 } as const,
 };
+
+export const TYPE_SCALE = {
+  title: 20,
+  subtitle: 14,
+  body: 14,
+  caption: 12,
+} as const;
