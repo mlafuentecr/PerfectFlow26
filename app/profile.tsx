@@ -73,10 +73,11 @@ export default function ProfileScreen({ navigation }: any) {
 
   const links = [
     { key: 'rate', label: t('rateUs'), icon: 'star-outline', onPress: () => setShowRateModal(true) },
+    { key: 'device', label: t('deviceSection'), icon: 'hardware-chip-outline', onPress: () => navigation.navigate('legal', { kind: 'device' }) },
     { key: 'faq', label: t('faqs'), icon: 'help-circle-outline', onPress: () => navigation.navigate('legal', { kind: 'faq' }) },
     { key: 'terms', label: t('terms'), icon: 'document-text-outline', onPress: () => navigation.navigate('legal', { kind: 'terms' }) },
     { key: 'privacy', label: t('privacy'), icon: 'shield-checkmark-outline', onPress: () => navigation.navigate('legal', { kind: 'privacy' }) },
-    { key: 'ack', label: t('acknowledgments'), icon: 'heart-outline', onPress: () => Linking.openURL('https://perfecten.store/acknowledgments') },
+    { key: 'ack', label: t('acknowledgments'), icon: 'heart-outline', onPress: () => navigation.navigate('legal', { kind: 'benefits' }) },
   ] as const;
 
   return (

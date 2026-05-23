@@ -1,6 +1,6 @@
 import { Language } from './i18n';
 
-type LegalKind = 'faq' | 'terms' | 'privacy';
+type LegalKind = 'faq' | 'terms' | 'privacy' | 'benefits' | 'device';
 
 export type LegalItem = {
   id: string;

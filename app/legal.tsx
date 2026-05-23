@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -15,6 +15,8 @@ export default function LegalScreen({ navigation, route }: any) {
   const [expanded, setExpanded] = useState<string>(section.items[0]?.id ?? '');
   const viewMore = language === 'es' ? 'Ver más' : 'View More';
   const viewLess = language === 'es' ? 'Ver menos' : 'View Less';
+  const isDeviceMode = kind === 'device';
+  const isBenefitsMode = kind === 'benefits';
   const isSingleCardMode = kind === 'terms' || kind === 'privacy';
 
   return (
@@ -27,7 +29,61 @@ export default function LegalScreen({ navigation, route }: any) {
           </Pressable>
         </View>
 
-        {isSingleCardMode ? (
+        {isDeviceMode ? (
+          <View style={s.deviceWrap}>
+            <View style={s.deviceHero}>
+              <Image source={require('../images/device/device-lifestyle.jpg')} style={s.deviceHeroImage} resizeMode='cover' />
+              <LinearGradient
+                colors={['rgba(5,12,36,0.78)', 'rgba(5,12,36,0.18)']}
+                start={{ x: 0.5, y: 1 }}
+                end={{ x: 0.5, y: 0 }}
+                style={s.deviceHeroOverlay}
+              />
+            </View>
+
+            <View style={s.deviceProductsRow}>
+              <BlurView intensity={40} tint='dark' style={s.deviceProductCard}>
+                <Image source={require('../images/device/device-pink.png')} style={s.deviceProductImage} resizeMode='cover' />
+              </BlurView>
+              <BlurView intensity={40} tint='dark' style={s.deviceProductCard}>
+                <Image source={require('../images/device/device-black.jpg')} style={s.deviceProductImage} resizeMode='cover' />
+              </BlurView>
+            </View>
+
+            {section.items.map((item) => (
+              <BlurView key={item.id} intensity={46} tint='dark' style={[s.card, s.cardOpen]}>
+                <LinearGradient
+                  colors={['rgba(12,22,64,0.92)', 'rgba(10,19,56,0.84)', 'rgba(8,16,48,0.78)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={s.cardGradient}
+                >
+                  <View style={s.singleCardTap}>
+                    <Text style={s.singleHeading}>{item.question}</Text>
+                    <Text style={s.singleAnswer}>{item.answer}</Text>
+                  </View>
+                </LinearGradient>
+              </BlurView>
+            ))}
+          </View>
+        ) : isBenefitsMode ? (
+          <View style={s.benefitsWrap}>
+            <Image source={require('../images/ad-girl.png')} style={s.benefitsHero} resizeMode='cover' />
+            <BlurView intensity={48} tint='dark' style={[s.card, s.cardOpen, s.benefitsTextCard]}>
+              <LinearGradient
+                colors={['rgba(12,22,64,0.92)', 'rgba(10,19,56,0.84)', 'rgba(8,16,48,0.78)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={s.cardGradient}
+              >
+                <View style={s.singleCardTap}>
+                  <Text style={s.singleHeading}>{section.items[0]?.question ?? ''}</Text>
+                  <Text style={s.singleAnswer}>{section.items[0]?.answer ?? ''}</Text>
+                </View>
+              </LinearGradient>
+            </BlurView>
+          </View>
+        ) : isSingleCardMode ? (
           <BlurView intensity={48} tint='dark' style={[s.card, s.cardOpen]}>
             <LinearGradient
               colors={['rgba(12,22,64,0.92)', 'rgba(10,19,56,0.84)', 'rgba(8,16,48,0.78)']}
@@ -111,6 +167,42 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   listWrap: { gap: 14 },
+  deviceWrap: {
+    gap: 12,
+  },
+  deviceHero: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.32)',
+  },
+  deviceHeroImage: {
+    width: '100%',
+    height: 220,
+  },
+  deviceHeroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  deviceProductsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  deviceProductCard: {
+    flex: 1,
+    height: 190,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  deviceProductImage: {
+    width: '100%',
+    height: '100%',
+  },
+  benefitsWrap: {
+    gap: 12,
+  },
   card: {
     ...GLASS_CARD_DARK,
     borderRadius: 18,
@@ -129,6 +221,14 @@ const s = StyleSheet.create({
   singleCardTap: {
     paddingHorizontal: 18,
     paddingVertical: 18,
+  },
+  benefitsHero: {
+    width: '100%',
+    height: 400,
+    borderRadius: 18,
+  },
+  benefitsTextCard: {
+    marginTop: 0,
   },
   singleHeading: {
     color: '#F8FAFF',

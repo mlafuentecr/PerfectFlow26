@@ -70,6 +70,7 @@ const INSIGHTS: Array<{ hook: string; message: string }> = [
 ];
 
 const LAST_INSIGHT_INDEX_KEY = 'pf_last_insight_index_v1';
+const SECTION_GAP = 16;
 
 export default function HomeScreen({ navigation }: Props) {
   const [name, setName] = useState('');
@@ -347,7 +348,7 @@ const s = StyleSheet.create({
   screenBg: { flex: 1 },
   c: { flex: 1, paddingHorizontal: 16, paddingTop: 50, paddingBottom: 2 },
   topRow: {
-    marginBottom: 10,
+    marginBottom: SECTION_GAP,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
@@ -381,7 +382,7 @@ const s = StyleSheet.create({
   },
   heroCard: {
     ...GLASS_CARD_BASE,
-    marginBottom: 15,
+    marginBottom: SECTION_GAP,
     overflow: 'hidden',
   },
   heroImage: { minHeight: 142, justifyContent: 'flex-end' },
@@ -414,7 +415,7 @@ const s = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(153,182,255,0.45)',
-    marginBottom: 10,
+    marginBottom: SECTION_GAP,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.12,
@@ -442,23 +443,33 @@ const s = StyleSheet.create({
   insightHook: { color: '#ECF2FF', fontSize: TYPE_SCALE.subtitle, fontWeight: '700', marginBottom: 3 },
   insightMsg: { color: '#D6E2FF', fontSize: TYPE_SCALE.body, lineHeight: 18, maxWidth: 320 },
   quickHeaderRow: {
-    marginTop: 2,
-    marginBottom: 0,
+    marginTop: 0,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   quickTitle: { color: '#fff', fontSize: TYPE_SCALE.title, fontWeight: '700', marginTop: 0 },
   quickHint: { color: '#8D7BFF', fontSize: TYPE_SCALE.subtitle, fontWeight: '600' },
-  quickRowScroll: { marginBottom: -24 },
-  quickRow: { paddingTop: 2, paddingBottom: 0, gap: 8, paddingRight: 8 },
+  quickRowScroll: {
+    height: 160,
+    marginBottom: SECTION_GAP,
+    flexGrow: 0,
+  },
+  quickRow: {
+    paddingTop: 0,
+    paddingBottom: 0,
+    gap: 8,
+    paddingRight: 8,
+    alignItems: 'stretch',
+  },
   quickCard: {
     width: 124,
     height: 155,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(135,154,255,0.45)',
-    marginRight: 8,
+    marginRight: 0,
     marginTop: 0,
     marginBottom: 0,
     overflow: 'hidden',
@@ -488,8 +499,8 @@ const s = StyleSheet.create({
   quickCardTechnique: { color: '#97A8DE', marginTop: 0, fontSize: TYPE_SCALE.subtitle, lineHeight: 13, marginBottom: 0 },
   streakCard: {
     ...GLASS_CARD_BASE,
-    marginTop: -20,
-    marginBottom: 10,
+    marginTop: 0,
+    marginBottom: SECTION_GAP,
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 10,

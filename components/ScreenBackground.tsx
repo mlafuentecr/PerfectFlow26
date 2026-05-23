@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ImageBackground, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { ImageBackground, Platform, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -41,9 +41,10 @@ export default function ScreenBackground({
 
   const activeKey = backgroundKey ?? bgKey;
   const bg = BREATH_BACKGROUNDS.find((b) => b.key === activeKey) ?? BREATH_BACKGROUNDS[0];
+  const safeBlurRadius = Platform.OS === 'android' ? 0 : blurRadius;
 
   return (
-    <ImageBackground source={bg.src} style={[s.bg, style]} imageStyle={s.bgImage} blurRadius={blurRadius}>
+    <ImageBackground source={bg.src} style={[s.bg, style]} imageStyle={s.bgImage} blurRadius={safeBlurRadius}>
       <LinearGradient
         colors={['rgba(2,8,35,0.68)', 'rgba(3,12,48,0.82)']}
         start={{ x: 0.5, y: 0 }}

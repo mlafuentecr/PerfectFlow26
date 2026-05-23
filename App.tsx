@@ -22,7 +22,7 @@ export type RootStackParamList = {
   sessions: undefined;
   progress: undefined;
   profile: undefined;
-  legal: { kind: 'faq' | 'terms' | 'privacy' };
+  legal: { kind: 'faq' | 'terms' | 'privacy' | 'benefits' | 'device' };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
