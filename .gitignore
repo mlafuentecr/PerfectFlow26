@@ -21,6 +21,7 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+
 # debug
 npm-debug.*
 yarn-debug.*
@@ -39,6 +40,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+!/android/app/
+!/android/app/google-services.json
 
 # Sensitive OAuth client secret backup (do not commit)
 bkup/client_secret_*.json
