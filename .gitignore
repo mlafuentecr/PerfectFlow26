@@ -42,6 +42,11 @@ yarn-error.*
 /android/*
 !/android/app/
 !/android/app/google-services.json
+!/android/gradlew
+!/android/gradle/
+!/android/gradle/wrapper/
+!/android/gradle/wrapper/gradle-wrapper.jar
+!/android/gradle/wrapper/gradle-wrapper.properties
 
 
 # Sensitive OAuth client secret backup (do not commit)
