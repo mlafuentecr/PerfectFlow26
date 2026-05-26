@@ -69,6 +69,40 @@ const INSIGHTS: Array<{ hook: string; message: string }> = [
   { hook: 'Quick reset', message: 'Breathe in calm, breathe out pressure.' },
 ];
 
+const INSIGHTS_ES: Array<{ hook: string; message: string }> = [
+  { hook: '¿Ansiedad?', message: 'Exhalar más lento puede ayudar a tu cuerpo a sentirse más seguro y en calma.' },
+  { hook: '¿Estrés?', message: 'Toma 5 minutos para bajar el ritmo y reiniciar tu mente.' },
+  { hook: '¿Necesitas enfoque?', message: 'Un patrón de respiración constante ayuda a despejar el ruido mental.' },
+  { hook: 'Antes de dormir', message: 'Respirar lento ayuda a tu cuerpo a entrar en modo descanso.' },
+  { hook: '¿Mente acelerada?', message: 'Prueba inhalar 4, exhalar 6 para un ritmo mental más suave.' },
+  { hook: '¿Baja energía?', message: 'Un ciclo corto de respiración activa despierta tu atención.' },
+  { hook: '¿Día pesado?', message: 'Un minuto consciente basta para interrumpir la tensión.' },
+  { hook: '¿Necesitas equilibrio?', message: 'La respiración constante crea estabilidad emocional con el tiempo.' },
+  { hook: '¿Sobrepensando?', message: 'Vuelve a tu respiración y tus pensamientos se suavizan.' },
+  { hook: 'Reinicio rápido', message: 'Inhala calma, exhala presión.' },
+];
+
+const MOOD_TITLE_ES: Record<string, string> = {
+  'Anxiety Relief': 'Alivio de ansiedad',
+  'Stress Reset': 'Reinicio del estrés',
+  'Anger Release': 'Liberar enojo',
+  'Overthinking Calm': 'Calma mental',
+  'Deep Focus': 'Enfoque profundo',
+  'Sleep Wind Down': 'Prepararte para dormir',
+  'Sadness Support': 'Apoyo emocional',
+  'Panic Reset': 'Reinicio del pánico',
+  'Confidence Boost': 'Impulso de confianza',
+  'Low Energy Reset': 'Reinicio de energía',
+};
+
+const TECHNIQUE_ES: Record<BreathTechnique, string> = {
+  'Box Breathing': 'Respiración caja',
+  '4-7-8 Breathing': 'Respiración 4-7-8',
+  'Coherent Breathing': 'Respiración coherente',
+  'Calm Reset': 'Reinicio de calma',
+  'Wim Hof': 'Wim Hof',
+};
+
 const LAST_INSIGHT_INDEX_KEY = 'pf_last_insight_index_v1';
 const SECTION_GAP = 16;
 
@@ -124,7 +158,8 @@ export default function HomeScreen({ navigation }: Props) {
   }, []);
 
   const heroBg = BREATH_BACKGROUNDS.find((b) => b.key === heroBgKey) ?? BREATH_BACKGROUNDS[0];
-  const weekDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekDayLabels = language === 'es' ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const insights = language === 'es' ? INSIGHTS_ES : INSIGHTS;
   const jsDay = new Date().getDay(); // Sun=0..Sat=6
   const todayIndexMonFirst = (jsDay + 6) % 7;
   const openReminderModal = () => {
@@ -168,7 +203,7 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenBackground style={s.screenBg} backgroundKey={heroBgKey} syncOnFocus={false}>
+    <ScreenBackground style={s.screenBg} backgroundKey={heroBgKey} syncOnFocus={false} blurRadius={12} blurIntensity={58}>
       <View style={s.c}>
         <View style={s.topRow}>
           <View style={s.greetWrap}>
@@ -194,8 +229,10 @@ export default function HomeScreen({ navigation }: Props) {
               style={s.heroOverlay}
             >
               <View style={s.heroContent}>
-                <Text style={s.heroTitle}>Breathe and Reset</Text>
-                <Text style={s.heroDesc}>Take a mindful breath and reset your mood.</Text>
+                <Text style={s.heroTitle}>{language === 'es' ? 'Respira y reinicia' : 'Breathe and Reset'}</Text>
+                <Text style={s.heroDesc}>
+                  {language === 'es' ? 'Toma una respiración consciente y reinicia tu estado.' : 'Take a mindful breath and reset your mood.'}
+                </Text>
                 <View style={s.heroBtn}>
                   <Text style={s.heroBtnText}>{t('startBreathing')}</Text>
                 </View>
@@ -215,16 +252,16 @@ export default function HomeScreen({ navigation }: Props) {
             >
               <View style={s.insightLeft}>
                 <Text style={s.quickTitle}>{t('dailyInsight')}</Text>
-                <Text style={s.insightHook}>{INSIGHTS[insightIndex].hook}</Text>
-                <Text style={s.insightMsg}>{INSIGHTS[insightIndex].message}</Text>
+                <Text style={s.insightHook}>{insights[insightIndex].hook}</Text>
+                <Text style={s.insightMsg}>{insights[insightIndex].message}</Text>
               </View>
             </LinearGradient>
           </ImageBackground>
         </Pressable>
         
         <View style={s.quickHeaderRow}>
-          <Text style={s.quickTitle}>Shift Your Mood</Text>
-          <Text style={s.quickHint}>Swipe</Text>
+          <Text style={s.quickTitle}>{language === 'es' ? 'Cambia tu estado' : 'Shift Your Mood'}</Text>
+          <Text style={s.quickHint}>{language === 'es' ? 'Desliza' : 'Swipe'}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow} style={s.quickRowScroll}>
           {MOOD_SESSIONS.map((session) => (
@@ -242,9 +279,9 @@ export default function HomeScreen({ navigation }: Props) {
                 <View style={s.quickIconWrap}>
                   <Ionicons name={session.icon} size={26} color={session.tint} />
                 </View>
-                <Text style={s.quickCardTitle}>{session.title}</Text>
+                <Text style={s.quickCardTitle}>{language === 'es' ? (MOOD_TITLE_ES[session.title] ?? session.title) : session.title}</Text>
                 <Text style={s.quickCardTime}>{session.time}</Text>
-                <Text style={s.quickCardTechnique}>{session.technique}</Text>
+                <Text style={s.quickCardTechnique}>{language === 'es' ? TECHNIQUE_ES[session.technique] : session.technique}</Text>
               </LinearGradient>
             </Pressable>
           ))}
@@ -252,14 +289,16 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={[s.streakCard, compact && s.streakCardCompact]}>
           <View style={s.streakHeaderRow}>
             <View style={s.streakHeaderLeft}>
-              <Text style={s.streakTitle}>Your Streak</Text>
+              <Text style={s.streakTitle}>{language === 'es' ? 'Tu racha' : 'Your Streak'}</Text>
               {streak >= 2 ? (
                 <Text style={s.streakDaysText}>
                   <Text style={s.streakDaysNumber}>{streak}</Text>
-                  <Text style={s.streakDaysCopy}> days in a row</Text>
+                  <Text style={s.streakDaysCopy}>{language === 'es' ? ' días seguidos' : ' days in a row'}</Text>
                 </Text>
               ) : (
-                <Text style={s.streakDaysCopyMuted}>Keep going. Your streak starts at 2 days.</Text>
+                <Text style={s.streakDaysCopyMuted}>
+                  {language === 'es' ? 'Sigue así. Tu racha empieza en 2 días.' : 'Keep going. Your streak starts at 2 days.'}
+                </Text>
               )}
             </View>
 
@@ -292,7 +331,7 @@ export default function HomeScreen({ navigation }: Props) {
       <Modal visible={showReminderModal} transparent animationType='fade' onRequestClose={() => setShowReminderModal(false)}>
         <View style={s.modalBackdrop}>
           <View style={s.modalCard}>
-            <Text style={s.modalTitle}>{language === 'es' ? 'Set breathing reminder' : 'Set breathing reminder'}</Text>
+            <Text style={s.modalTitle}>{language === 'es' ? 'Configurar recordatorio de respiración' : 'Set breathing reminder'}</Text>
             <Text style={s.modalSub}>
               {language === 'es' ? 'Escoge una hora diaria para tu sesión.' : 'Choose a daily time for your session.'}
             </Text>
@@ -306,7 +345,7 @@ export default function HomeScreen({ navigation }: Props) {
                 <TouchableOpacity style={s.timeArrowBtn} onPress={() => setReminderHour((h) => (h + 1) % 24)}>
                   <Ionicons name='chevron-down' size={18} color='#D5DEFF' />
                 </TouchableOpacity>
-                <Text style={s.timeLabel}>Hour</Text>
+                <Text style={s.timeLabel}>{language === 'es' ? 'Hora' : 'Hour'}</Text>
               </View>
 
               <Text style={s.timeDivider}>:</Text>
@@ -319,7 +358,7 @@ export default function HomeScreen({ navigation }: Props) {
                 <TouchableOpacity style={s.timeArrowBtn} onPress={() => setReminderMinute((m) => (m + 5) % 60)}>
                   <Ionicons name='chevron-down' size={18} color='#D5DEFF' />
                 </TouchableOpacity>
-                <Text style={s.timeLabel}>Min</Text>
+                <Text style={s.timeLabel}>{language === 'es' ? 'Min' : 'Min'}</Text>
               </View>
             </View>
 

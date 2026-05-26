@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { ImageBackground, Platform, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   BREATH_BACKGROUNDS,
@@ -14,6 +15,7 @@ type Props = {
   backgroundKey?: BreathBackgroundKey;
   syncOnFocus?: boolean;
   blurRadius?: number;
+  blurIntensity?: number;
 };
 
 export default function ScreenBackground({
@@ -22,6 +24,7 @@ export default function ScreenBackground({
   backgroundKey,
   syncOnFocus = true,
   blurRadius = 8,
+  blurIntensity = 0,
 }: Props) {
   const [bgKey, setBgKey] = useState<BreathBackgroundKey>(backgroundKey ?? 'mountain');
 
@@ -51,6 +54,14 @@ export default function ScreenBackground({
         end={{ x: 0.5, y: 1 }}
         style={s.tint}
       />
+      {blurIntensity > 0 ? (
+        <BlurView
+          intensity={blurIntensity}
+          tint='dark'
+          style={s.tint}
+          experimentalBlurMethod='dimezisBlurView'
+        />
+      ) : null}
       {children}
     </ImageBackground>
   );

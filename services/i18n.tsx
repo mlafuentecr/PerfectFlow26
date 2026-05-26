@@ -79,7 +79,7 @@ const STRINGS = {
     spanish: 'Español',
     home: 'Inicio',
     breathe: 'Respira',
-    learn: 'Aprende',
+    learn: 'Aprender',
     help: 'Ayuda',
     settings: 'Ajustes',
     rateUs: 'Califícanos',
