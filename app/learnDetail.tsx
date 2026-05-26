@@ -3,8 +3,10 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Header from '../components/Header';
 import { getLearnItemById, getWordCount } from '../services/learnContent';
 import ScreenBackground from '../components/ScreenBackground';
+import { useI18n } from '../services/i18n';
 
 export default function LearnDetailScreen({ navigation, route }: any) {
+  const { t, language } = useI18n();
   const itemId = route.params?.itemId as string | undefined;
   const item = itemId ? getLearnItemById(itemId) : undefined;
 
@@ -12,8 +14,8 @@ export default function LearnDetailScreen({ navigation, route }: any) {
     return (
       <ScreenBackground>
         <View style={s.overlay}>
-          <Header title='Learn' onBack={() => navigation.goBack()} />
-          <Text style={s.notFound}>Content not found.</Text>
+          <Header title={t('learn')} onBack={() => navigation.goBack()} />
+          <Text style={s.notFound}>{language === 'es' ? 'Contenido no encontrado.' : 'Content not found.'}</Text>
         </View>
       </ScreenBackground>
     );
@@ -22,10 +24,10 @@ export default function LearnDetailScreen({ navigation, route }: any) {
   return (
     <ScreenBackground>
       <View style={s.overlay}>
-        <Header title='Learn' onBack={() => navigation.goBack()} />
+        <Header title={t('learn')} onBack={() => navigation.goBack()} />
         <ScrollView contentContainerStyle={s.contentWrap} showsVerticalScrollIndicator={false}>
           <Text style={s.title}>{item.title}</Text>
-          <Text style={s.meta}>{getWordCount(item.content)} words</Text>
+          <Text style={s.meta}>{getWordCount(item.content)} {language === 'es' ? 'palabras' : 'words'}</Text>
           <Text style={s.body}>{item.content}</Text>
         </ScrollView>
       </View>

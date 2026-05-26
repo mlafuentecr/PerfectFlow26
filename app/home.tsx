@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -104,7 +105,7 @@ const TECHNIQUE_ES: Record<BreathTechnique, string> = {
 };
 
 const LAST_INSIGHT_INDEX_KEY = 'pf_last_insight_index_v1';
-const SECTION_GAP = 16;
+const SECTION_GAP = 12;
 
 export default function HomeScreen({ navigation }: Props) {
   const [name, setName] = useState('');
@@ -203,8 +204,15 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenBackground style={s.screenBg} backgroundKey={heroBgKey} syncOnFocus={false} blurRadius={12} blurIntensity={58}>
-      <View style={s.c}>
+    <ScreenBackground style={s.screenBg} backgroundKey={heroBgKey} syncOnFocus={false} blurRadius={3} blurIntensity={12}>
+      <LinearGradient
+        pointerEvents='none'
+        colors={['rgba(99,74,190,0.18)', 'rgba(68,43,150,0.13)', 'rgba(42,24,98,0.10)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={s.bgPurpleTint}
+      />
+      <View style={[s.c, compact && s.cCompact]}>
         <View style={s.topRow}>
           <View style={s.greetWrap}>
             <Text style={s.greet}>{t('greeting')}</Text>
@@ -213,7 +221,7 @@ export default function HomeScreen({ navigation }: Props) {
             </Text>
             <Text style={s.helper}>{t('motivator')}</Text>
           </View>
-          <TouchableOpacity style={[s.reminderIconBtn, reminder && s.reminderIconBtnActive]} onPress={openReminderModal}>
+          <TouchableOpacity style={[s.reminderIconBtn, compact && s.reminderIconBtnCompact, reminder && s.reminderIconBtnActive]} onPress={openReminderModal}>
             <Ionicons name='notifications' size={22} color={reminder ? '#B9A7FF' : '#EEF3FF'} />
             {reminder ? <View style={s.reminderDot} /> : null}
           </TouchableOpacity>
@@ -222,11 +230,11 @@ export default function HomeScreen({ navigation }: Props) {
         <Pressable style={s.heroCard} onPress={() => navigation.navigate('breathing')}>
           <ImageBackground source={heroBg.src} style={[s.heroImage, compact && s.heroImageCompact]} imageStyle={s.heroImageStyle}>
             <LinearGradient
-              colors={['rgba(5,15,48,0.92)', 'rgba(8,22,62,0.72)', 'rgba(8,22,62,0.15)']}
+              colors={['rgba(4,14,48,0.94)', 'rgba(8,22,62,0.70)', 'rgba(20,34,80,0.20)']}
               locations={[0, 0.62, 1]}
               start={{ x: 0.5, y: 1 }}
               end={{ x: 0.5, y: 0 }}
-              style={s.heroOverlay}
+              style={[s.heroOverlay, compact && s.heroOverlayCompact]}
             >
               <View style={s.heroContent}>
                 <Text style={s.heroTitle}>{language === 'es' ? 'Respira y reinicia' : 'Breathe and Reset'}</Text>
@@ -250,8 +258,8 @@ export default function HomeScreen({ navigation }: Props) {
               end={{ x: 0.5, y: 0 }}
               style={s.insightOverlay}
             >
-              <View style={s.insightLeft}>
-                <Text style={s.quickTitle}>{t('dailyInsight')}</Text>
+              <View style={[s.insightLeft, compact && s.insightLeftCompact]}>
+                <Text style={s.insightTitle}>{t('dailyInsight')}</Text>
                 <Text style={s.insightHook}>{insights[insightIndex].hook}</Text>
                 <Text style={s.insightMsg}>{insights[insightIndex].message}</Text>
               </View>
@@ -259,11 +267,11 @@ export default function HomeScreen({ navigation }: Props) {
           </ImageBackground>
         </Pressable>
         
-        <View style={s.quickHeaderRow}>
+        <View style={[s.quickHeaderRow, compact && s.quickHeaderRowCompact]}>
           <Text style={s.quickTitle}>{language === 'es' ? 'Cambia tu estado' : 'Shift Your Mood'}</Text>
           <Text style={s.quickHint}>{language === 'es' ? 'Desliza' : 'Swipe'}</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow} style={s.quickRowScroll}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow} style={[s.quickRowScroll, compact && s.quickRowScrollCompact]}>
           {MOOD_SESSIONS.map((session) => (
             <Pressable
               key={session.title}
@@ -276,11 +284,13 @@ export default function HomeScreen({ navigation }: Props) {
                 end={{ x: 0.5, y: 0 }}
                 style={s.quickCardGradient}
               >
+                <View style={s.quickTimeBadge}>
+                  <Text style={s.quickTimeBadgeText}>{session.time.replace(/\s+/g, '')}</Text>
+                </View>
                 <View style={s.quickIconWrap}>
                   <Ionicons name={session.icon} size={26} color={session.tint} />
                 </View>
                 <Text style={s.quickCardTitle}>{language === 'es' ? (MOOD_TITLE_ES[session.title] ?? session.title) : session.title}</Text>
-                <Text style={s.quickCardTime}>{session.time}</Text>
                 <Text style={s.quickCardTechnique}>{language === 'es' ? TECHNIQUE_ES[session.technique] : session.technique}</Text>
               </LinearGradient>
             </Pressable>
@@ -330,7 +340,7 @@ export default function HomeScreen({ navigation }: Props) {
 
       <Modal visible={showReminderModal} transparent animationType='fade' onRequestClose={() => setShowReminderModal(false)}>
         <View style={s.modalBackdrop}>
-          <View style={s.modalCard}>
+          <BlurView intensity={60} tint='dark' style={s.modalCard} experimentalBlurMethod='dimezisBlurView'>
             <Text style={s.modalTitle}>{language === 'es' ? 'Configurar recordatorio de respiración' : 'Set breathing reminder'}</Text>
             <Text style={s.modalSub}>
               {language === 'es' ? 'Escoge una hora diaria para tu sesión.' : 'Choose a daily time for your session.'}
@@ -376,7 +386,7 @@ export default function HomeScreen({ navigation }: Props) {
                 <Text style={s.modalRemoveTxt}>{language === 'es' ? 'Quitar recordatorio' : 'Remove reminder'}</Text>
               </TouchableOpacity>
             ) : null}
-          </View>
+          </BlurView>
         </View>
       </Modal>
     </ScreenBackground>
@@ -385,135 +395,161 @@ export default function HomeScreen({ navigation }: Props) {
 
 const s = StyleSheet.create({
   screenBg: { flex: 1 },
-  c: { flex: 1, paddingHorizontal: 16, paddingTop: 50, paddingBottom: 2 },
+  bgPurpleTint: { ...StyleSheet.absoluteFillObject },
+  c: { flex: 1, paddingHorizontal: 16, paddingTop: 46, paddingBottom: 2 },
+  cCompact: { paddingTop: 36, paddingBottom: 1 },
   topRow: {
-    marginBottom: SECTION_GAP,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
   greetWrap: { maxWidth: '80%', paddingRight: 8 },
-  greet: { color: '#DCE6FF', fontSize: TYPE_SCALE.subtitle, fontWeight: '500' },
-  nameText: { color: '#fff', fontSize: 24, lineHeight: 38, fontWeight: '700', marginTop: 1 },
-  helper: { color: '#D6DEFF', fontSize: TYPE_SCALE.subtitle, marginTop: 2 },
+  greet: { color: '#CEDBFF', fontSize: 15, fontWeight: '500', letterSpacing: 0.2 },
+  nameText: { color: '#F7FAFF', fontSize: 24, lineHeight: 34, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
+  helper: { color: '#C2D1F7', fontSize: 14, marginTop: 2, fontWeight: '500' },
   reminderIconBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.4)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(175,170,255,0.7)',
+    backgroundColor: 'rgba(83,77,157,0.32)',
+    shadowColor: '#6E6AFF',
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  reminderIconBtnCompact: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   reminderIconBtnActive: {
-    borderColor: 'rgba(189,168,255,0.9)',
-    backgroundColor: 'rgba(106,84,196,0.28)',
+    borderColor: 'rgba(193,171,255,0.95)',
+    backgroundColor: 'rgba(121,93,228,0.34)',
   },
   reminderDot: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#A992FF',
+    top: 14,
+    right: 14,
+    width: 8,
+    height: 8,
+    borderRadius: 5,
+    backgroundColor: '#C0A9FF',
   },
   heroCard: {
-    ...GLASS_CARD_BASE,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(166,191,255,0.42)',
+    backgroundColor: 'rgba(13,21,58,0.45)',
     marginBottom: SECTION_GAP,
     overflow: 'hidden',
+    shadowColor: '#061034',
+    shadowOpacity: 0.34,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 10 },
   },
-  heroImage: { minHeight: 142, justifyContent: 'flex-end' },
-  heroImageCompact: { minHeight: 126 },
-  heroImageStyle: { borderRadius: 16 },
+  heroImage: { minHeight: 184, justifyContent: 'flex-end' },
+  heroImageCompact: { minHeight: 136 },
+  heroImageStyle: { borderRadius: 28 },
   heroOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 12,
+    justifyContent: 'flex-end',
+    padding: 18,
   },
-  heroContent: { width: '60%' },
-  heroTitle: { color: '#fff', fontSize: TYPE_SCALE.title, fontWeight: '700' },
-  heroDesc: { color: '#D6DEFF', marginTop: 4, fontSize: TYPE_SCALE.body, lineHeight: 18, maxWidth: 240 },
+  heroOverlayCompact: { padding: 12 },
+  heroContent: { width: '72%' },
+  heroTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
+  heroDesc: { color: '#DCE7FF', marginTop: 8, fontSize: 14, lineHeight: 20, maxWidth: 300, fontWeight: '500' },
   heroBtn: {
-    marginTop: 8,
+    marginTop: 16,
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 26,
+    paddingVertical: 12,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.45)',
-    backgroundColor: 'rgba(118,109,255,0.55)',
-    shadowColor: '#6E74FF',
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
+    borderColor: 'rgba(186,170,255,0.92)',
+    backgroundColor: 'rgba(104,95,232,0.92)',
+    shadowColor: '#7A70FF',
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
   },
-  heroBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  heroBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   insightCard: {
-    borderRadius: 20,
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: 'rgba(153,182,255,0.45)',
+    borderColor: 'rgba(150,175,255,0.42)',
+    backgroundColor: 'rgba(8,18,52,0.48)',
     marginBottom: SECTION_GAP,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#060E2C',
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
   },
   insightGradient: {
-    minHeight: 130,
+    minHeight: 142,
     justifyContent: 'center',
   },
-  insightGradientCompact: {
-    minHeight: 90,
-  },
+  insightGradientCompact: { minHeight: 96 },
   insightOverlay: {
     flex: 1,
     justifyContent: 'center',
   },
   insightLeft: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 22,
+    paddingVertical: 16,
     paddingRight: 48,
     justifyContent: 'center',
   },
-  insightTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  insightHook: { color: '#ECF2FF', fontSize: TYPE_SCALE.subtitle, fontWeight: '700', marginBottom: 3 },
-  insightMsg: { color: '#D6E2FF', fontSize: TYPE_SCALE.body, lineHeight: 18, maxWidth: 320 },
+  insightLeftCompact: { paddingHorizontal: 14, paddingVertical: 8, paddingRight: 42 },
+  insightTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 6, letterSpacing: -0.2 },
+  insightHook: { color: '#9E8BFF', fontSize: 15, fontWeight: '700', marginBottom: 6 },
+  insightMsg: { color: '#D6E2FF', fontSize: 14, lineHeight: 20, maxWidth: 370, fontWeight: '500' },
   quickHeaderRow: {
     marginTop: 0,
-    marginBottom: 8,
+    marginBottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  quickTitle: { color: '#fff', fontSize: TYPE_SCALE.title, fontWeight: '700', marginTop: 0 },
-  quickHint: { color: '#8D7BFF', fontSize: TYPE_SCALE.subtitle, fontWeight: '600' },
+  quickHeaderRowCompact: { marginBottom: 4 },
+  quickTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', marginTop: 0, letterSpacing: -0.2 },
+  quickHint: { color: '#9A84FF', fontSize: 16, fontWeight: '700' },
   quickRowScroll: {
-    height: 160,
+    height: 142,
     marginBottom: SECTION_GAP,
+    flexShrink: 0,
     flexGrow: 0,
   },
+  quickRowScrollCompact: { height: 106, marginBottom: 8, flexShrink: 0 },
   quickRow: {
     paddingTop: 0,
     paddingBottom: 0,
-    gap: 8,
+    gap: 12,
     paddingRight: 8,
     alignItems: 'stretch',
   },
   quickCard: {
-    width: 124,
-    height: 155,
-    borderRadius: 14,
+    width: 116,
+    height: 136,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(135,154,255,0.45)',
+    borderColor: 'rgba(155,178,255,0.44)',
     marginRight: 0,
     marginTop: 0,
     marginBottom: 0,
     overflow: 'hidden',
+    shadowColor: '#050F30',
+    shadowOpacity: 0.34,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
   },
-  quickCardCompact: { height: 145 },
+  quickCardCompact: { width: 106, height: 102, borderRadius: 16 },
   quickCardGradient: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -522,29 +558,47 @@ const s = StyleSheet.create({
   },
   quickIconWrap: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 34,
-    height: 34,
+    top: 10,
+    left: 10,
+    width: 32,
+    height: 32,
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: 'rgba(255,255,255,0.25)',
   },
-  quickCardTitle: { color: '#fff', fontSize: TYPE_SCALE.body, fontWeight: '600' },
-  quickCardTime: { color: '#C7D3FB', marginTop: 1, fontSize: TYPE_SCALE.subtitle },
-  quickCardTechnique: { color: '#97A8DE', marginTop: 0, fontSize: TYPE_SCALE.subtitle, lineHeight: 13, marginBottom: 0 },
+  quickTimeBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(7,16,46,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(199,215,255,0.35)',
+  },
+  quickTimeBadgeText: { color: '#E7EFFF', fontSize: 11, fontWeight: '700' },
+  quickCardTitle: { color: '#F6F8FF', fontSize: 14, fontWeight: '700', lineHeight: 18, marginTop: 4 },
+  quickCardTechnique: { color: '#B7C7F8', marginTop: 1, fontSize: 12, lineHeight: 14, marginBottom: 0, fontWeight: '500' },
   streakCard: {
-    ...GLASS_CARD_BASE,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(156,176,255,0.44)',
+    backgroundColor: 'rgba(10,20,56,0.52)',
     marginTop: 0,
-    marginBottom: SECTION_GAP,
-    paddingHorizontal: 12,
-    paddingTop: 10,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 10,
+    shadowColor: '#08143A',
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
   },
-  streakCardCompact: { paddingTop: 8, paddingBottom: 8 },
+  streakCardCompact: { paddingTop: 10, paddingBottom: 8 },
   streakHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -552,35 +606,35 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   streakHeaderLeft: { flex: 1, paddingRight: 12 },
-  streakTitle: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
+  streakTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
   streakDaysText: { marginTop: 2 },
   streakDaysNumber: { color: '#9C83FF', fontSize: 28, fontWeight: '800' },
   streakDaysCopy: { color: '#E2E9FF', fontSize: 15, fontWeight: '500' },
-  streakDaysCopyMuted: { color: '#C8D3FB', fontSize: TYPE_SCALE.subtitle, lineHeight: 16, marginTop: 4 },
+  streakDaysCopyMuted: { color: '#CBD7FB', fontSize: 14, lineHeight: 18, marginTop: 6, fontWeight: '500' },
   streakRightWrap: { alignItems: 'center', justifyContent: 'center' },
   streakFlame: {
-    width: 40,
-    height: 40,
-    borderRadius: 32,
+    width: 42,
+    height: 42,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(149,131,255,0.65)',
-    backgroundColor: 'rgba(82,55,178,0.35)',
+    borderColor: 'rgba(174,146,255,0.8)',
+    backgroundColor: 'rgba(98,67,209,0.36)',
     shadowColor: '#8D74FF',
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.44,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
   },
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 0 },
-  dayWrap: { alignItems: 'center', width: 32 },
+  weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  dayWrap: { alignItems: 'center', width: 34 },
   dayCircle: {
     width: 28,
     height: 28,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(164,203,255,0.45)',
-    backgroundColor: 'rgba(93,120,169,0.18)',
+    borderColor: 'rgba(175,201,255,0.5)',
+    backgroundColor: 'rgba(91,117,167,0.20)',
     marginBottom: 4,
     alignItems: 'center',
     justifyContent: 'center',
@@ -594,7 +648,7 @@ const s = StyleSheet.create({
     borderColor: '#9A80FF',
     backgroundColor: 'rgba(110,76,209,0.25)',
   },
-  dayLabel: { color: '#C8D4FA', fontSize: TYPE_SCALE.subtitle, marginTop: 1 },
+  dayLabel: { color: '#C8D4FA', fontSize: TYPE_SCALE.subtitle, marginTop: 1, fontWeight: '500' },
   dayLabelToday: { color: '#A690FF', fontWeight: '700' },
   modalBackdrop: {
     flex: 1,
@@ -608,6 +662,13 @@ const s = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     padding: 18,
+    borderColor: 'rgba(188,202,255,0.52)',
+    backgroundColor: 'rgba(12,19,52,0.36)',
+    shadowColor: '#08143A',
+    shadowOpacity: 0.35,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    overflow: 'hidden',
   },
   modalTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
   modalSub: { color: '#C8D6FF', fontSize: 13, marginTop: 6 },

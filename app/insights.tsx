@@ -3,19 +3,20 @@ import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from '
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import ScreenBackground from '../components/ScreenBackground';
-import { LEARN_ITEMS, getExcerpt, getLearnItemImage, getWordCount } from '../services/learnContent';
+import { LEARN_ITEMS, getLearnCardCopy, getLearnItemImage, getWordCount } from '../services/learnContent';
 import { useI18n } from '../services/i18n';
 import { GLASS_CARD_BASE } from '../services/uiStyles';
 
 export default function InsightsScreen({ navigation }: any) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   return (
     <ScreenBackground>
       <View style={s.overlay}>
-        <Header title='Learn' />
+        <Header title={t('learn')} />
         <ScrollView contentContainerStyle={s.listContent} showsVerticalScrollIndicator={false}>
           {LEARN_ITEMS.map((item) => {
+            const cardCopy = getLearnCardCopy(item, language);
             const words = getWordCount(item.content);
             return (
               <View key={item.id} style={s.card}>
@@ -24,14 +25,14 @@ export default function InsightsScreen({ navigation }: any) {
                 </ImageBackground>
 
                 <View style={s.cardBody}>
-                  <Text style={s.cardTitle}>{item.title}</Text>
-                  <Text style={s.cardMeta}>{words} words</Text>
-                  <Text style={s.cardExcerpt}>{getExcerpt(item.content, 120)}</Text>
+                  <Text style={s.cardTitle}>{cardCopy.title}</Text>
+                  <Text style={s.cardMeta}>{words} {language === 'es' ? 'palabras' : 'words'}</Text>
+                  <Text style={s.cardExcerpt}>{cardCopy.excerpt}</Text>
                   <Pressable
                     style={s.readMoreBtn}
                     onPress={() => navigation.navigate('learnDetail', { itemId: item.id })}
                   >
-                    <Text style={s.readMoreTxt}>Read more</Text>
+                    <Text style={s.readMoreTxt}>{language === 'es' ? 'Leer más' : 'Read more'}</Text>
                   </Pressable>
                 </View>
               </View>
