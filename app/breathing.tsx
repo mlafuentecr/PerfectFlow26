@@ -178,6 +178,15 @@ export default function BreathingScreen({ navigation, route }: any) {
   const [guideSyncPending, setGuideSyncPending] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [activeSounds, setActiveSounds] = useState<Array<{ key: (typeof SOUNDS)[number]['key']; sound: Audio.Sound; volume: number }>>([]);
+  const isSpanish = String(language).toLowerCase().startsWith('es');
+  const stepLabel = (name: string) => {
+    if (!isSpanish) return name;
+    if (name === 'Ready') return 'Listo';
+    if (name === 'Inhale') return 'Inhala';
+    if (name === 'Exhale') return 'Exhala';
+    if (name === 'Hold') return 'Sostén';
+    return name;
+  };
 
   const currentBg = BACKGROUNDS.find((b) => b.key === bgKey) ?? BACKGROUNDS[0];
   const currentSound = SOUNDS.find((s) => s.key === soundKey) ?? SOUNDS[0];
@@ -676,13 +685,21 @@ export default function BreathingScreen({ navigation, route }: any) {
         ) : null}
 
         <View style={s.centerWrap}>
+          {(() => {
+            const rawStep = running ? pattern[phaseIndex].name : completed ? pattern[phaseIndex].name : 'Ready';
+            const localizedStep = stepLabel(rawStep);
+            return (
           <BreathingCircle
-            step={running ? pattern[phaseIndex].name : completed ? pattern[phaseIndex].name : 'Ready'}
+            step={localizedStep}
             countdown={running ? left : completed ? left : 0}
             duration={pattern[phaseIndex].seconds * 1000}
             isRunning={running && !showTechniqueMenu}
             completed={completed}
+            doneTitle={isSpanish ? '¡Lo hiciste!' : 'You did it!'}
+            doneBody={isSpanish ? '¿Cómo te sientes?' : 'How do you feel?'}
           />
+            );
+          })()}
         </View>
 
         <View style={s.controlsWrap}>

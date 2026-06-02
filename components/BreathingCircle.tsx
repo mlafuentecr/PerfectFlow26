@@ -8,12 +8,16 @@ export default function BreathingCircle({
   duration,
   isRunning,
   completed,
+  doneTitle = 'You did it!',
+  doneBody = 'How do you feel?',
 }: {
   step: string;
   countdown: number;
   duration: number;
   isRunning: boolean;
   completed?: boolean;
+  doneTitle?: string;
+  doneBody?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const ringPulse = useRef(new Animated.Value(0)).current;
@@ -108,8 +112,8 @@ export default function BreathingCircle({
         <View style={s.innerTextWrap}>
           {completed ? (
             <>
-              <Text style={s.doneTitle}>You did it!</Text>
-              <Text style={s.doneBody}>How do you feel?</Text>
+              <Text style={s.doneTitle}>{doneTitle}</Text>
+              <Text style={s.doneBody}>{doneBody}</Text>
             </>
           ) : (
             <>

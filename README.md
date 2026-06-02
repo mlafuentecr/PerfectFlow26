@@ -7,6 +7,31 @@ npm install
 npx expo run:android
 ```
 
+## Build Android release (APK)
+
+Para generar un build release local:
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+export PATH="$JAVA_HOME/bin:$PATH"
+npx expo run:android --variant release
+```
+
+APK generado en:
+
+```text
+/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/android/app/build/outputs/apk/release/app-release.apk
+```
+
+## Copiar APK al Desktop
+
+Comando directo:
+
+```bash
+cp /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/android/app/build/outputs/apk/release/app-release.apk ~/Desktop/PerfectFlow-release.apk
+```
+
 ## Start Metro (clean cache)
 
 Use this when changes are not reflecting, audio is not playing, or after native/config updates:
