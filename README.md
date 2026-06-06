@@ -7,29 +7,47 @@ npm install
 npx expo run:android
 ```
 
-## Build Android release (APK)
+## Build Android para Google Play con Expo/EAS
 
-Para generar un build release local:
+Desde la raiz del proyecto:
 
 ```bash
 cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-export PATH="$JAVA_HOME/bin:$PATH"
-npx expo run:android --variant release
+npm run build:android
 ```
 
-APK generado en:
-
-```text
-/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/android/app/build/outputs/apk/release/app-release.apk
-```
-
-## Copiar APK al Desktop
-
-Comando directo:
+Ese script ejecuta:
 
 ```bash
-cp /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/android/app/build/outputs/apk/release/app-release.apk ~/Desktop/PerfectFlow-release.apk
+npx eas-cli@latest build --platform android --profile production
+```
+
+Cuando termine, Expo/EAS muestra un link a un archivo `.aab`. Ese es el archivo que se sube a Google Play Console.
+
+Antes de generar el build, puedes verificar la sesion de Expo:
+
+```bash
+npx eas-cli@latest whoami
+```
+
+Tambien puedes confirmar las credenciales Android:
+
+```bash
+npx eas-cli@latest credentials -p android
+```
+
+Debe usar estos datos:
+
+```text
+Application Identifier: com.perfecten.perfectflow
+Keystore: Play Store keystore (Default)
+SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
+```
+
+Para subir despues de tener un `.aab` valido:
+
+```bash
+npm run submit:android
 ```
 
 ## Start Metro (clean cache)

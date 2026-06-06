@@ -1,4 +1,4 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Learn more https://docs.expo.dev/build-reference/easignore/
 
 # dependencies
 node_modules/
@@ -18,12 +18,9 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 google-services.json
-credentials.json
-credentials/
 
 # Metro
 .metro-health-check*
-
 
 # debug
 npm-debug.*
@@ -46,3 +43,7 @@ yarn-error.*
 
 # Sensitive OAuth client secret backup (do not commit)
 bkup/client_secret_*.json
+
+# EAS needs this local Firebase Android config during prebuild, but it should
+# stay out of git.
+!google-services.json
