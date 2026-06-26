@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+
+# Expo output
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Generated native projects. EAS regenerates these from app.config.js.
+/android
+/ios
+.kotlin/
+
+# Local credentials and signing material
+credentials.json
+credentials/
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Local and temporary files
+.DS_Store
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.env*.local
+*.tsbuildinfo
+
+# EAS needs the Firebase config during prebuild.
+!google-services.json

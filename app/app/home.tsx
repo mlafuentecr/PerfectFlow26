@@ -212,7 +212,11 @@ export default function HomeScreen({ navigation }: Props) {
         end={{ x: 0.5, y: 1 }}
         style={s.bgPurpleTint}
       />
-      <View style={[s.c, compact && s.cCompact]}>
+      <ScrollView
+        style={s.contentScroll}
+        contentContainerStyle={[s.c, compact && s.cCompact]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={s.topRow}>
           <View style={s.greetWrap}>
             <Text style={s.greet}>{t('greeting')}</Text>
@@ -227,7 +231,7 @@ export default function HomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        <Pressable style={s.heroCard} onPress={() => navigation.navigate('breathing')}>
+        <Pressable style={[s.heroCard, compact && s.heroCardCompact]} onPress={() => navigation.navigate('breathing')}>
           <ImageBackground source={heroBg.src} style={[s.heroImage, compact && s.heroImageCompact]} imageStyle={s.heroImageStyle}>
             <LinearGradient
               colors={['rgba(4,14,48,0.94)', 'rgba(8,22,62,0.70)', 'rgba(20,34,80,0.20)']}
@@ -249,7 +253,7 @@ export default function HomeScreen({ navigation }: Props) {
           </ImageBackground>
         </Pressable>
 
-        <Pressable style={s.insightCard} onPress={() => navigation.navigate('insights')}>
+        <Pressable style={[s.insightCard, compact && s.insightCardCompact]} onPress={() => navigation.navigate('insights')}>
           <ImageBackground source={require('../assets/images/daily-insight.png')} style={[s.insightGradient, compact && s.insightGradientCompact]}>
             <LinearGradient
               colors={['rgba(5,15,48,0.84)', 'rgba(5,15,48,0.62)', 'rgba(5,15,48,0.20)']}
@@ -271,7 +275,7 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={s.quickTitle}>{language === 'es' ? 'Cambia tu estado' : 'Shift Your Mood'}</Text>
           <Text style={s.quickHint}>{language === 'es' ? 'Desliza' : 'Swipe'}</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow} style={[s.quickRowScroll, compact && s.quickRowScrollCompact]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.quickRow, compact && s.quickRowCompact]} style={[s.quickRowScroll, compact && s.quickRowScrollCompact]}>
           {MOOD_SESSIONS.map((session) => (
             <Pressable
               key={session.title}
@@ -334,7 +338,7 @@ export default function HomeScreen({ navigation }: Props) {
             })}
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       <BottomNav active='home' navigate={(screen) => navigation.navigate(screen)} />
 
@@ -396,8 +400,9 @@ export default function HomeScreen({ navigation }: Props) {
 const s = StyleSheet.create({
   screenBg: { flex: 1 },
   bgPurpleTint: { ...StyleSheet.absoluteFillObject },
-  c: { flex: 1, paddingHorizontal: 16, paddingTop: 46, paddingBottom: 2 },
-  cCompact: { paddingTop: 36, paddingBottom: 1 },
+  contentScroll: { flex: 1 },
+  c: { paddingHorizontal: 16, paddingTop: 46, paddingBottom: 10 },
+  cCompact: { paddingTop: 36, paddingBottom: 8 },
   topRow: {
     marginBottom: 10,
     flexDirection: 'row',
@@ -452,8 +457,9 @@ const s = StyleSheet.create({
     shadowRadius: 26,
     shadowOffset: { width: 0, height: 10 },
   },
+  heroCardCompact: { marginBottom: 10 },
   heroImage: { minHeight: 184, justifyContent: 'flex-end' },
-  heroImageCompact: { minHeight: 136 },
+  heroImageCompact: { minHeight: 156 },
   heroImageStyle: { borderRadius: 28 },
   heroOverlay: {
     flex: 1,
@@ -461,7 +467,7 @@ const s = StyleSheet.create({
     padding: 18,
   },
   heroOverlayCompact: { padding: 12 },
-  heroContent: { width: '72%' },
+  heroContent: { width: '78%', minHeight: 0 },
   heroTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
   heroDesc: { color: '#DCE7FF', marginTop: 8, fontSize: 14, lineHeight: 20, maxWidth: 300, fontWeight: '500' },
   heroBtn: {
@@ -491,11 +497,12 @@ const s = StyleSheet.create({
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
   },
+  insightCardCompact: { marginBottom: 10 },
   insightGradient: {
     minHeight: 142,
     justifyContent: 'center',
   },
-  insightGradientCompact: { minHeight: 96 },
+  insightGradientCompact: { minHeight: 128 },
   insightOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -506,7 +513,7 @@ const s = StyleSheet.create({
     paddingRight: 48,
     justifyContent: 'center',
   },
-  insightLeftCompact: { paddingHorizontal: 14, paddingVertical: 8, paddingRight: 42 },
+  insightLeftCompact: { paddingHorizontal: 16, paddingVertical: 12, paddingRight: 38 },
   insightTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 6, letterSpacing: -0.2 },
   insightHook: { color: '#9E8BFF', fontSize: 15, fontWeight: '700', marginBottom: 6 },
   insightMsg: { color: '#D6E2FF', fontSize: 14, lineHeight: 20, maxWidth: 370, fontWeight: '500' },
@@ -516,27 +523,28 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
   },
   quickHeaderRowCompact: { marginBottom: 4 },
-  quickTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', marginTop: 0, letterSpacing: -0.2 },
+  quickTitle: { color: '#F5F8FF', fontSize: 17, fontWeight: '800', marginTop: 0, letterSpacing: -0.1, flexShrink: 1 },
   quickHint: { color: '#9A84FF', fontSize: 16, fontWeight: '700' },
   quickRowScroll: {
-    height: 142,
+    minHeight: 142,
     marginBottom: SECTION_GAP,
     flexShrink: 0,
-    flexGrow: 0,
   },
-  quickRowScrollCompact: { height: 106, marginBottom: 8, flexShrink: 0 },
+  quickRowScrollCompact: { minHeight: 134, marginBottom: 8, flexShrink: 0 },
   quickRow: {
     paddingTop: 0,
-    paddingBottom: 0,
+    paddingBottom: 2,
     gap: 12,
     paddingRight: 8,
     alignItems: 'stretch',
   },
+  quickRowCompact: { paddingBottom: 4 },
   quickCard: {
     width: 116,
-    height: 136,
+    minHeight: 136,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(155,178,255,0.44)',
@@ -549,12 +557,16 @@ const s = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
   },
-  quickCardCompact: { width: 106, height: 102, borderRadius: 16 },
+  quickCardCompact: { width: 116, minHeight: 126, borderRadius: 18 },
   quickCardGradient: {
-    flex: 1,
+    minHeight: 100,
     justifyContent: 'flex-end',
     paddingHorizontal: 10,
-    paddingBottom: 8,
+    paddingTop: 50,
+    paddingBottom: 10,
+    //border red
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   quickIconWrap: {
     position: 'absolute',
@@ -581,8 +593,8 @@ const s = StyleSheet.create({
     borderColor: 'rgba(199,215,255,0.35)',
   },
   quickTimeBadgeText: { color: '#E7EFFF', fontSize: 11, fontWeight: '700' },
-  quickCardTitle: { color: '#F6F8FF', fontSize: 14, fontWeight: '700', lineHeight: 18, marginTop: 4 },
-  quickCardTechnique: { color: '#B7C7F8', marginTop: 1, fontSize: 12, lineHeight: 14, marginBottom: 0, fontWeight: '500' },
+  quickCardTitle: { color: '#F6F8FF', fontSize: 14, fontWeight: '700', lineHeight: 17, marginTop: 4 },
+  quickCardTechnique: { color: '#B7C7F8', marginTop: 2, fontSize: 12, lineHeight: 14, marginBottom: 0, fontWeight: '500' },
   streakCard: {
     borderRadius: 26,
     borderWidth: 1,

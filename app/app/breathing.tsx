@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
@@ -622,14 +623,17 @@ export default function BreathingScreen({ navigation, route }: any) {
   return (
     <ImageBackground source={currentBg.src} style={s.bg} imageStyle={s.bgImage} blurRadius={8}>
       <LinearGradient colors={['rgba(2,8,35,0.68)', 'rgba(3,12,48,0.82)']} style={s.overlay}>
+        <SafeAreaView edges={['top']} style={s.topSafeArea}>
         <View style={s.topRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
             <Ionicons name='chevron-back' size={28} color='white' />
           </TouchableOpacity>
 
           <TouchableOpacity style={s.techniquePill} onPress={() => setShowTechniqueMenu((v) => !v)}>
-            <Text style={s.techniquePillText}>{technique}</Text>
-            <Ionicons name='chevron-down' size={18} color='#D8E0FF' />
+            <Text style={s.techniquePillText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
+              {technique}
+            </Text>
+            <Ionicons name='chevron-down' size={16} color='#D8E0FF' />
           </TouchableOpacity>
 
           <View style={s.topRightActions}>
@@ -666,6 +670,7 @@ export default function BreathingScreen({ navigation, route }: any) {
             </TouchableOpacity>
           </View>
         </View>
+        </SafeAreaView>
 
         {showTechniqueMenu ? (
           <View style={s.dropdown}>
@@ -868,23 +873,34 @@ export default function BreathingScreen({ navigation, route }: any) {
 const s = StyleSheet.create({
   bg: { flex: 1 },
   bgImage: { resizeMode: 'cover' },
-  overlay: { flex: 1, paddingTop: 56, paddingHorizontal: 16, paddingBottom: 6 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  overlay: { flex: 1, paddingHorizontal: 16 },
+  topSafeArea: { paddingTop: 6 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  backBtn: {
+    width: 34,
+    height: 40,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   techniquePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 5,
     backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.49)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: 999,
+    flex: 1,
+    minWidth: 0,
+    maxWidth: 270,
   },
-  techniquePillText: { color: '#fff', fontSize: 20, fontWeight: '600' },
+  techniquePillText: { color: '#fff', fontSize: 17, fontWeight: '600', flexShrink: 1 },
   iconBtn: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
@@ -900,7 +916,7 @@ const s = StyleSheet.create({
     borderColor: 'rgba(189,168,255,0.75)',
     backgroundColor: 'rgba(140,110,255,0.22)',
   },
-  topRightActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  topRightActions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   dropdown: {
     position: 'absolute',
     top: 108,
