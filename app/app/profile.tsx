@@ -24,6 +24,7 @@ import { GLASS_CARD_BASE, GLASS_CARD_SOFT } from '../services/uiStyles';
 
 const RATE_US_STORAGE_KEY = 'perfectflow_rate_us_local';
 const GOOGLE_PLAY_RATE_URL = 'https://play.google.com/store/apps/details?id=com.perfecten.perfectflow';
+const SUPPORT_EMAIL = 'support@perfecten.store';
 
 export default function ProfileScreen({ navigation }: any) {
   const [name, setName] = useState('');
@@ -71,8 +72,20 @@ export default function ProfileScreen({ navigation }: any) {
     Alert.alert(language === 'es' ? 'Gracias' : 'Thanks', language === 'es' ? '¡Gracias por tu feedback!' : 'Thanks for your feedback!');
   };
 
+  const onContactUs = async () => {
+    try {
+      await Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+    } catch {
+      Alert.alert(
+        language === 'es' ? 'Contáctanos' : 'Contact us',
+        language === 'es' ? `No se pudo abrir el correo para ${SUPPORT_EMAIL}.` : `Could not open email for ${SUPPORT_EMAIL}.`
+      );
+    }
+  };
+
   const links = [
     { key: 'rate', label: t('rateUs'), icon: 'star-outline', onPress: () => setShowRateModal(true) },
+    { key: 'contact', label: t('contactUs'), icon: 'mail-outline', onPress: onContactUs },
     { key: 'device', label: t('deviceSection'), icon: 'hardware-chip-outline', onPress: () => navigation.navigate('legal', { kind: 'device' }) },
     { key: 'faq', label: t('faqs'), icon: 'help-circle-outline', onPress: () => navigation.navigate('legal', { kind: 'faq' }) },
     { key: 'terms', label: t('terms'), icon: 'document-text-outline', onPress: () => navigation.navigate('legal', { kind: 'terms' }) },

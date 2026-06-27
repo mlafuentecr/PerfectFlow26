@@ -61,6 +61,54 @@ npx expo start -c --dev-client
 
 Importante: Google Sign-In no funciona bien en Expo Go porque esta app usa `@react-native-google-signin/google-signin`. Para probar login con Google, abre la app instalada **PerfectFlow**, no Expo Go.
 
+## Probar en emuladores de varios tamanos
+
+Si quieres revisar la UI en pantallas mas grandes o mas chicas, crea varios Android Virtual Devices en Android Studio.
+
+Ruta:
+
+```text
+Android Studio > Device Manager > Create Device
+```
+
+Tamanos recomendados:
+
+```text
+Telefono chico: Pixel 4 o similar
+Telefono grande: Pixel 9 Pro XL o similar
+Tablet compacta: Pixel Tablet
+```
+
+Flujo recomendado:
+
+1. Abre el emulador que quieres usar desde Android Studio.
+2. Entra al proyecto:
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+```
+
+3. Instala y abre la app en el emulador activo:
+
+```bash
+npm run android
+```
+
+4. Si ya tienes un Development Build instalado en ese emulador, levanta Metro con:
+
+```bash
+npx expo start -c --dev-client
+```
+
+Notas:
+
+```text
+npm run android / expo run:android = recompila la app nativa en el emulador activo
+npx expo start --dev-client = reutiliza el Development Build ya instalado
+```
+
+Si Gradle falla en esta maquina por Java 25, usa JDK 17 antes de correr `npm run android`.
+
 ## Build Android para Google Play
 
 Antes del build, confirma que estas logueado en Expo:
@@ -84,7 +132,13 @@ Build credentials: Play Store keystore (Default)
 Upload key SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
 ```
 
-Para generar el `.aab` de production:
+## Build Android
+
+### Opcion 1: `.aab` para Google Play
+
+Usa este flujo cuando vas a subir la app a Google Play Console, por ejemplo en Open Testing, Closed Testing o Production.
+
+Build remoto:
 
 ```bash
 cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
@@ -97,9 +151,50 @@ Ese script ejecuta:
 npx eas-cli@latest build --platform android --profile production
 ```
 
-Cuando termine, EAS muestra un link a un archivo `.aab`. Ese archivo es el que se sube a Google Play Console.
+Build local:
+
+```bash
+npm run build:android:local
+```
+
+Ese script fuerza JDK 17 automaticamente antes de correr EAS local, para evitar fallos de Gradle con Java 25.
+
+Resultado esperado:
+
+```text
+.aab
+```
+
+Ese archivo `.aab` es el que se sube a Google Play Console.
 
 El perfil `production` usa `autoIncrement`, asi que EAS sube el `versionCode` automaticamente en cada build.
+
+### Opcion 2: `.apk` para instalar directo en el telefono
+
+Usa este flujo cuando solo quieres probar la app instalada manualmente en Android, sin depender de Metro o del dev launcher.
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+npm run build:android:previewlocal
+```
+
+Resultado esperado:
+
+```text
+.apk
+```
+
+Ese archivo `.apk` no se sube a Google Play Console. Ese archivo se instala directo en el telefono.
+
+### Opcion 3: Development Build para iterar rapido
+
+Usa este flujo cuando quieres un cliente de desarrollo para abrir la app con Metro y probar cambios frecuentemente.
+
+```bash
+npm run build:android:devlocal
+```
+
+Ese comando tambien fuerza JDK 17 y genera el cliente de desarrollo localmente.
 
 ## Subir a Google Play desde EAS
 
@@ -172,6 +267,18 @@ Genera otro build. El perfil `production` tiene `autoIncrement`, asi que el sigu
 
 ```bash
 npm run build:android
+```
+
+### `This account has used its Android builds from the Free plan this month`
+
+Agotaste la cuota mensual de builds remotos de Android en Expo. Tienes tres opciones:
+
+1. Esperar al reinicio de cuota y volver a correr `npm run build:android`.
+2. Cambiar de plan en Expo.
+3. Compilar localmente:
+
+```bash
+npm run build:android:local
 ```
 
 ### `signed with the wrong key`

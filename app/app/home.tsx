@@ -544,7 +544,7 @@ const s = StyleSheet.create({
   quickRowCompact: { paddingBottom: 4 },
   quickCard: {
     width: 116,
-    minHeight: 136,
+    height: 136,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(155,178,255,0.44)',
@@ -557,14 +557,13 @@ const s = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
   },
-  quickCardCompact: { width: 116, minHeight: 126, borderRadius: 18 },
+  quickCardCompact: { width: 116, height: 126, borderRadius: 18 },
   quickCardGradient: {
-    minHeight: 100,
+    flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 10,
     paddingTop: 50,
     paddingBottom: 10,
-    //border red
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },

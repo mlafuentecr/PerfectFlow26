@@ -70,11 +70,11 @@ const s = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 26,
     paddingTop: 72,
-    paddingBottom: 44,
+    paddingBottom: 30,
   },
   topBlock: { alignItems: 'center' },
   logo: { width: 390, height: 182 },
-  middleBlock: { marginTop: 'auto', marginBottom: 44, maxWidth: 330, alignSelf: 'center' },
+  middleBlock: { marginTop: 'auto', marginBottom: 28, maxWidth: 330, alignSelf: 'center' },
   title: { fontSize: 38, lineHeight: 44, color: '#FFFFFF', fontWeight: '800', textAlign: 'center' },
   subtitle: {
     fontSize: 16,
@@ -84,6 +84,6 @@ const s = StyleSheet.create({
     maxWidth: 320,
     textAlign: 'center',
   },
-  bottomBlock: { marginTop: 0 },
-  small: { textAlign: 'center', color: '#8F93FF', marginTop: 18, fontSize: 16 },
+  bottomBlock: { marginTop: 0, marginBottom: 46 },
+  small: { textAlign: 'center', color: '#8F93FF', marginTop: 14, fontSize: 16 },
 });

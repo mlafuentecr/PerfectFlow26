@@ -765,11 +765,11 @@ export default function BreathingScreen({ navigation, route }: any) {
         <View style={s.modalWrap}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => setShowCustomize(false)}>
-                <Ionicons name='chevron-back' size={24} color='white' />
-              </TouchableOpacity>
+              <View style={s.modalHeaderSpacer} />
               <Text style={s.modalTitle}>Customize</Text>
-              <View style={{ width: 24 }} />
+              <TouchableOpacity onPress={() => setShowCustomize(false)} style={s.modalCloseBtn}>
+                <Ionicons name='close' size={24} color='white' />
+              </TouchableOpacity>
             </View>
 
             <View style={s.segmentWrap}>
@@ -997,6 +997,17 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  modalHeaderSpacer: { width: 40 },
+  modalCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
   },
   modalTitle: { color: '#fff', fontSize: 28, fontWeight: '700' },
   segmentWrap: {
