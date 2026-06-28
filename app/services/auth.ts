@@ -20,10 +20,13 @@ const webClientId =
   '1052635522459-955j142lqeps3vq4d5fssqgahmgb3f95.apps.googleusercontent.com';
 const androidClientId =
   '1052635522459-e5ghnvq1sr0euvp03th79bbekqsnaoj1.apps.googleusercontent.com';
+const iosClientId =
+  '1052635522459-1fr8cl7h40lsukdt56behk9bbieiib67.apps.googleusercontent.com';
 
 if (GoogleSignin) {
   GoogleSignin.configure({
     webClientId,
+    iosClientId,
     offlineAccess: false,
     profileImageSize: 120,
   });
@@ -66,4 +69,4 @@ export const logout = async () => {
   await signOut(auth);
 };
 
-export const ids = { webClientId, androidClientId };
+export const ids = { webClientId, androidClientId, iosClientId };

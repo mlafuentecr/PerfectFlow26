@@ -30,6 +30,9 @@ npm run start
 Para instalar y abrir la app nativa en Android:
 
 ```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+export JAVA_HOME=/opt/homebrew/Cellar/openjdk@17/17.0.19/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
 npm run android
 ```
 
@@ -56,6 +59,9 @@ npx expo start -c
 Si estas usando Development Build, usa:
 
 ```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+npm run build:android:devlocal
+
 npx expo start -c --dev-client
 ```
 
@@ -152,7 +158,7 @@ npx eas-cli@latest build --platform android --profile production
 ```
 
 Build local:
-
+Simpre cambiar la version en /app/app.config.js
 ```bash
 npm run build:android:local
 ```
@@ -195,6 +201,44 @@ npm run build:android:devlocal
 ```
 
 Ese comando tambien fuerza JDK 17 y genera el cliente de desarrollo localmente.
+
+## Build iOS
+
+### `.ipa` para subir a Apple
+
+Usa este flujo cuando quieres generar el build de iPhone que se sube a App Store Connect o Transporter.
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+
+eas build --platform ios
+eas submit --platform ios
+
+
+npm run build:ios:local
+eas submit --platform ios --path ./builds/PerfectFlow.ipa
+```
+
+Ese script ejecuta:
+
+```bash
+npx eas-cli@latest build --platform ios --profile production --local
+```
+
+Resultado esperado:
+
+```text
+.ipa
+```
+
+Ese archivo `.ipa` es el que se sube a Apple.
+
+Notas:
+
+```text
+App Store Connect / Transporter aceptan .ipa
+El simulador usa .app, pero eso no se sube a Apple
+```
 
 ## Subir a Google Play desde EAS
 

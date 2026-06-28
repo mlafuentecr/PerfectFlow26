@@ -29,8 +29,15 @@ import {
 import { getSoundPrefs, saveSoundPrefs } from '../services/soundPrefs';
 
 type TechniqueName = 'Box Breathing' | '4-7-8 Breathing' | 'Coherent Breathing' | 'Calm Reset' | 'Wim Hof';
+type PhaseName = 'Inhale' | 'Exhale' | 'Hold';
 
-const TECHNIQUES: Record<TechniqueName, { pattern: { name: string; seconds: number }[] }> = {
+const DEFAULT_SESSION_OPTIONS = [3, 5, 10, 15] as const;
+const WIM_HOF_ROUND_OPTIONS = [2, 3, 4] as const;
+const WIM_HOF_BREATHS_PER_ROUND = 35;
+const WIM_HOF_EMPTY_HOLD_SECONDS = 60;
+const WIM_HOF_RECOVERY_HOLD_SECONDS = 15;
+
+const TECHNIQUES: Record<TechniqueName, { pattern: { name: PhaseName; seconds: number }[] }> = {
   'Box Breathing': {
     pattern: [
       { name: 'Inhale', seconds: 4 },
@@ -62,9 +69,20 @@ const TECHNIQUES: Record<TechniqueName, { pattern: { name: string; seconds: numb
     pattern: [
       { name: 'Inhale', seconds: 2 },
       { name: 'Exhale', seconds: 2 },
-      { name: 'Hold', seconds: 15 },
+      { name: 'Hold', seconds: WIM_HOF_EMPTY_HOLD_SECONDS },
+      { name: 'Inhale', seconds: 2 },
+      { name: 'Hold', seconds: WIM_HOF_RECOVERY_HOLD_SECONDS },
+      { name: 'Exhale', seconds: 2 },
     ],
   },
+};
+
+const TECHNIQUE_INFO: Record<TechniqueName, string> = {
+  'Box Breathing': 'Box Breathing: 4s inhale + 4s hold + 4s exhale + 4s hold',
+  '4-7-8 Breathing': '4-7-8 Breathing: 4s inhale + 7s hold + 8s exhale',
+  'Coherent Breathing': 'Coherent Breathing: 5s inhale + 5s exhale',
+  'Calm Reset': 'Calm Reset: 4s inhale + 6s exhale',
+  'Wim Hof': 'Wim Hof: 35 breaths with recovery and hold rounds',
 };
 
 const BACKGROUNDS = BREATH_BACKGROUNDS;
@@ -105,6 +123,7 @@ const SOUNDS = [
 const GUIDE_AUDIO = {
   en: {
     intro: require('../assets/sounds/audio-guide/intro.mp3'),
+    wimHofIntro: require('../assets/sounds/audio-guide/winhof-intro.wav'),
     steps: {
       Inhale: require('../assets/sounds/audio-guide/Inhale.mp3'),
       Exhale: require('../assets/sounds/audio-guide/Exhale.mp3'),
@@ -122,11 +141,12 @@ const GUIDE_AUDIO = {
       9: require('../assets/sounds/audio-guide/Nine.mp3'),
       10: require('../assets/sounds/audio-guide/ten.mp3'),
     } as Record<number, any>,
-    done: require('../assets/sounds/audio-guide/You did it..mp3'),
-    feel: require('../assets/sounds/audio-guide/How do you feel?.mp3'),
+    done: require('../assets/sounds/audio-guide/you-did-it.mp3'),
+    feel: require('../assets/sounds/audio-guide/how-do-you-feel.mp3'),
   },
   es: {
     intro: require('../assets/sounds/audio-guide/es/es-intro.mp3'),
+    wimHofIntro: require('../assets/sounds/audio-guide/es/winhof-intro-es.wav'),
     steps: {
       Inhale: require('../assets/sounds/audio-guide/es/Inhale.mp3'),
       Exhale: require('../assets/sounds/audio-guide/es/Exhale.mp3'),
@@ -150,31 +170,36 @@ const GUIDE_AUDIO = {
 } as const;
 
 const GUIDE_INTRO_OFFSET_FALLBACK_MS = 5000;
+const GUIDE_INTRO_END_BUFFER_MS = 400;
 
 export default function BreathingScreen({ navigation, route }: any) {
   const { language } = useI18n();
-  const SESSION_OPTIONS = [3, 5, 10, 15] as const;
   const [technique, setTechnique] = useState<TechniqueName>(route.params?.technique || '4-7-8 Breathing');
   const [showTechniqueMenu, setShowTechniqueMenu] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
-  const [customizeTab, setCustomizeTab] = useState<'backgrounds' | 'sounds'>('backgrounds');
+  const [customizeTab, setCustomizeTab] = useState<'backgrounds' | 'sounds'>('sounds');
 
   const [bgKey, setBgKey] = useState<BreathBackgroundKey>('mountain');
-  const [soundKey, setSoundKey] = useState<(typeof SOUNDS)[number]['key']>('ocean');
+  const [soundKey, setSoundKey] = useState<(typeof SOUNDS)[number]['key'] | 'default'>('default');
 
   const pattern = useMemo(() => TECHNIQUES[technique].pattern, [technique]);
+  const isWimHof = technique === 'Wim Hof';
   const [running, setRunning] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [left, setLeft] = useState(pattern[0].seconds);
-  const [sessionMinutes, setSessionMinutes] = useState<(typeof SESSION_OPTIONS)[number]>(5);
+  const [sessionMinutes, setSessionMinutes] = useState<(typeof DEFAULT_SESSION_OPTIONS)[number]>(5);
   const [sessionLeft, setSessionLeft] = useState(5 * 60);
   const [completed, setCompleted] = useState(false);
+  const [wimHofRounds, setWimHofRounds] = useState<(typeof WIM_HOF_ROUND_OPTIONS)[number]>(3);
+  const [wimHofRoundIndex, setWimHofRoundIndex] = useState(1);
+  const [wimHofBreathCount, setWimHofBreathCount] = useState(1);
 
   const [soundObj, setSoundObj] = useState<Audio.Sound | null>(null);
   const [soundPlaying, setSoundPlaying] = useState(false);
+  const [baseSoundVolume, setBaseSoundVolume] = useState(0.65);
   const [guideObj, setGuideObj] = useState<Audio.Sound | null>(null);
   const [guidePlaying, setGuidePlaying] = useState(false);
-  const [guideEnabled, setGuideEnabled] = useState(false);
+  const [guideEnabled, setGuideEnabled] = useState(true);
   const [guidedMode, setGuidedMode] = useState(false);
   const [guideSyncPending, setGuideSyncPending] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -188,16 +213,23 @@ export default function BreathingScreen({ navigation, route }: any) {
     if (name === 'Hold') return 'Sostén';
     return name;
   };
+  const showTechniqueInfo = () => {
+    Alert.alert(technique, TECHNIQUE_INFO[technique]);
+  };
 
   const currentBg = BACKGROUNDS.find((b) => b.key === bgKey) ?? BACKGROUNDS[0];
-  const currentSound = SOUNDS.find((s) => s.key === soundKey) ?? SOUNDS[0];
+  const currentSound = SOUNDS.find((s) => s.key === soundKey) ?? null;
   const hasAnySoundSelected = activeSounds.length > 0 || !!soundObj;
+  const sessionActive = running || guideSyncPending;
   const [guideStartTimeout, setGuideStartTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const soundObjRef = useRef<Audio.Sound | null>(null);
   const guideObjRef = useRef<Audio.Sound | null>(null);
   const activeSoundsRef = useRef<Array<{ key: (typeof SOUNDS)[number]['key']; sound: Audio.Sound; volume: number }>>([]);
   const guideStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const guideCompletionResolverRef = useRef<(() => void) | null>(null);
+  const guideLaunchTokenRef = useRef(0);
   const guideCueKeyRef = useRef<string>('');
+  const sessionVersionRef = useRef(0);
 
   useEffect(() => {
     soundObjRef.current = soundObj;
@@ -233,13 +265,68 @@ export default function BreathingScreen({ navigation, route }: any) {
     })();
   }, []);
 
+  const resetSessionUi = async () => {
+    sessionVersionRef.current += 1;
+    guideLaunchTokenRef.current += 1;
+    if (guideStartTimeoutRef.current) {
+      clearTimeout(guideStartTimeoutRef.current);
+      guideStartTimeoutRef.current = null;
+    }
+    setGuideStartTimeout(null);
+    setGuideSyncPending(false);
+    setRunning(false);
+    setCompleted(false);
+    setGuidePlaying(false);
+    setGuidedMode(false);
+    guideCueKeyRef.current = '';
+    await stopGuideClip();
+  };
+
+  const finishSession = async (sessionVersion = sessionVersionRef.current) => {
+    if (sessionVersion !== sessionVersionRef.current) return;
+    setRunning(false);
+    setCompleted(true);
+    await markTodaySessionDone();
+    if (sessionVersion !== sessionVersionRef.current) return;
+    if (soundObjRef.current) {
+      try {
+        const st = await soundObjRef.current.getStatusAsync();
+        if (st.isLoaded) await soundObjRef.current.stopAsync();
+      } catch {
+        // Ignore stale unloaded sound instances.
+      }
+      setSoundPlaying(false);
+    }
+    if (guideObjRef.current) {
+      try {
+        const st = await guideObjRef.current.getStatusAsync();
+        if (st.isLoaded) await guideObjRef.current.stopAsync();
+      } catch {
+        // Ignore stale unloaded sound instances.
+      }
+      setGuidePlaying(false);
+      setGuidedMode(false);
+    }
+    for (const item of activeSoundsRef.current) {
+      try {
+        const st = await item.sound.getStatusAsync();
+        if (st.isLoaded) await item.sound.stopAsync();
+      } catch {
+        // Ignore stale unloaded sound instances.
+      }
+    }
+  };
+
   useEffect(() => {
+    sessionVersionRef.current += 1;
     setPhaseIndex(0);
     setLeft(pattern[0].seconds);
     setRunning(false);
     setCompleted(false);
-    setSessionLeft(sessionMinutes * 60);
-  }, [pattern]);
+    setWimHofRoundIndex(1);
+    setWimHofBreathCount(1);
+    setSessionLeft(isWimHof ? 0 : sessionMinutes * 60);
+  }, [pattern, isWimHof, sessionMinutes, wimHofRounds]);
 
   useEffect(() => {
     let timer: any;
@@ -247,6 +334,56 @@ export default function BreathingScreen({ navigation, route }: any) {
       timer = setInterval(() => {
         setLeft((v) => {
           if (v <= 1) {
+            if (isWimHof) {
+              const currentPhase = pattern[phaseIndex];
+              const nextPhase = pattern[phaseIndex + 1];
+              const currentSessionVersion = sessionVersionRef.current;
+
+              if (currentPhase.name === 'Inhale') {
+                if (nextPhase) {
+                  setPhaseIndex(phaseIndex + 1);
+                  return nextPhase.seconds;
+                }
+                void finishSession(currentSessionVersion);
+                return 0;
+              }
+
+              if (currentPhase.name === 'Exhale' && phaseIndex === 1) {
+                if (wimHofBreathCount >= WIM_HOF_BREATHS_PER_ROUND) {
+                  if (nextPhase) {
+                    setPhaseIndex(phaseIndex + 1);
+                    return nextPhase.seconds;
+                  }
+                  void finishSession(currentSessionVersion);
+                  return 0;
+                }
+                setWimHofBreathCount((count) => count + 1);
+                setPhaseIndex(0);
+                return pattern[0].seconds;
+              }
+
+              if (currentPhase.name === 'Hold') {
+                if (nextPhase) {
+                  setPhaseIndex(phaseIndex + 1);
+                  return nextPhase.seconds;
+                }
+                void finishSession(currentSessionVersion);
+                return 0;
+              }
+
+              if (currentPhase.name === 'Exhale') {
+                if (wimHofRoundIndex >= wimHofRounds) {
+                  void finishSession(currentSessionVersion);
+                  return 0;
+                }
+
+                setWimHofRoundIndex((round) => round + 1);
+                setWimHofBreathCount(1);
+                setPhaseIndex(0);
+                return pattern[0].seconds;
+              }
+            }
+
             setPhaseIndex((x) => {
               const next = (x + 1) % pattern.length;
               return next;
@@ -258,53 +395,30 @@ export default function BreathingScreen({ navigation, route }: any) {
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [running, pattern, phaseIndex, showTechniqueMenu]);
+  }, [running, pattern, phaseIndex, showTechniqueMenu, isWimHof, wimHofBreathCount, wimHofRoundIndex, wimHofRounds]);
 
   useEffect(() => {
     let sessionTimer: any;
-    if (running && sessionLeft > 0 && !showTechniqueMenu) {
+    if (!isWimHof && running && sessionLeft > 0 && !showTechniqueMenu) {
       sessionTimer = setInterval(() => {
         setSessionLeft((v) => (v > 0 ? v - 1 : 0));
       }, 1000);
     }
     return () => clearInterval(sessionTimer);
-  }, [running, sessionLeft, showTechniqueMenu]);
+  }, [running, sessionLeft, showTechniqueMenu, isWimHof]);
 
   useEffect(() => {
-    if (sessionLeft !== 0 || completed) return;
+    if (isWimHof || sessionLeft !== 0 || completed) return;
     const finish = async () => {
-      setRunning(false);
-      setCompleted(true);
-      await markTodaySessionDone();
-      if (soundObj) {
-        await soundObj.stopAsync();
-        setSoundPlaying(false);
-      }
-      if (guideObj) {
-        try {
-          const st = await guideObj.getStatusAsync();
-          if (st.isLoaded) await guideObj.stopAsync();
-        } catch {
-          // Ignore stale unloaded sound instances.
-        }
-        setGuidePlaying(false);
-        setGuidedMode(false);
-      }
-      for (const item of activeSounds) {
-        try {
-          const st = await item.sound.getStatusAsync();
-          if (st.isLoaded) await item.sound.stopAsync();
-        } catch {
-          // Ignore stale unloaded sound instances.
-        }
-      }
+      await finishSession();
     };
     void finish();
-  }, [sessionLeft, completed, soundObj, guideObj, activeSounds]);
+  }, [sessionLeft, completed, isWimHof]);
 
   useEffect(() => {
+    if (isWimHof) return;
     setSessionLeft(sessionMinutes * 60);
-  }, [sessionMinutes]);
+  }, [sessionMinutes, isWimHof]);
 
   useEffect(() => {
     setLeft(pattern[phaseIndex].seconds);
@@ -322,7 +436,7 @@ export default function BreathingScreen({ navigation, route }: any) {
   }, []);
 
   const playOrSwitchSound = async (key?: (typeof SOUNDS)[number]['key']) => {
-    const picked = SOUNDS.find((s) => s.key === (key ?? soundKey)) ?? currentSound;
+    const picked = SOUNDS.find((s) => s.key === (key ?? soundKey)) ?? SOUNDS[0];
 
     if (soundObj) {
       await soundObj.stopAsync();
@@ -333,11 +447,12 @@ export default function BreathingScreen({ navigation, route }: any) {
     const { sound } = await Audio.Sound.createAsync(picked.src, {
       isLooping: true,
       shouldPlay: true,
-      volume: 0.65,
+      volume: baseSoundVolume,
     });
-    await sound.setStatusAsync({ shouldPlay: true, isLooping: true, volume: 0.65, positionMillis: 0 });
+    await sound.setStatusAsync({ shouldPlay: true, isLooping: true, volume: baseSoundVolume, positionMillis: 0 });
     setSoundObj(sound);
     setSoundPlaying(true);
+    setSoundKey(picked.key);
     setIsMuted(false);
   };
 
@@ -349,7 +464,7 @@ export default function BreathingScreen({ navigation, route }: any) {
       try {
         const st = await soundObj.getStatusAsync();
         if (st.isLoaded) {
-          await soundObj.setVolumeAsync(nextMuted ? 0 : 0.65);
+          await soundObj.setVolumeAsync(nextMuted ? 0 : baseSoundVolume);
           if (!nextMuted && !st.isPlaying) await soundObj.playAsync();
         }
       } catch {
@@ -372,6 +487,35 @@ export default function BreathingScreen({ navigation, route }: any) {
     }
   };
 
+  const updateBaseSoundVolume = async (value: number) => {
+    setBaseSoundVolume(value);
+    if (!soundObj) return;
+    try {
+      const st = await soundObj.getStatusAsync();
+      if (st.isLoaded) {
+        await soundObj.setVolumeAsync(isMuted ? 0 : value);
+      }
+    } catch {
+      // Ignore stale unloaded sound instances.
+    }
+  };
+
+  const stopBaseSound = async () => {
+    if (!soundObj) return;
+    try {
+      const st = await soundObj.getStatusAsync();
+      if (st.isLoaded) {
+        await soundObj.stopAsync();
+        await soundObj.unloadAsync();
+      }
+    } catch {
+      // Ignore stale unloaded sound instances.
+    } finally {
+      setSoundObj(null);
+      setSoundPlaying(false);
+    }
+  };
+
   const getGuideLang = (): 'en' | 'es' => (
     String(language).toLowerCase().startsWith('es') ? 'es' : 'en'
   );
@@ -387,17 +531,28 @@ export default function BreathingScreen({ navigation, route }: any) {
     } catch {
       // Ignore stale unloaded sound instances.
     } finally {
+      guideCompletionResolverRef.current?.();
+      guideCompletionResolverRef.current = null;
       guideObjRef.current = null;
       setGuideObj(null);
     }
   };
 
-  const playGuideClip = async (src: any, options?: { interrupt?: boolean; volume?: number }): Promise<number> => {
+  const playGuideClip = async (
+    src: any,
+    options?: { interrupt?: boolean; volume?: number; waitForCompletion?: boolean },
+  ): Promise<number> => {
     const interrupt = options?.interrupt ?? true;
     const volume = options?.volume ?? 0.95;
+    const waitForCompletion = options?.waitForCompletion ?? false;
     if (interrupt) {
       await stopGuideClip();
     }
+    const finishedPromise = waitForCompletion
+      ? new Promise<void>((resolve) => {
+          guideCompletionResolverRef.current = resolve;
+        })
+      : null;
     const { sound, status } = await Audio.Sound.createAsync(src, {
       shouldPlay: true,
       isLooping: false,
@@ -414,17 +569,53 @@ export default function BreathingScreen({ navigation, route }: any) {
           guideObjRef.current = null;
           setGuideObj(null);
         }
+        guideCompletionResolverRef.current?.();
+        guideCompletionResolverRef.current = null;
       }
     });
+    if (finishedPromise) {
+      await finishedPromise;
+    }
     if (status.isLoaded && typeof status.durationMillis === 'number') {
       return status.durationMillis;
     }
     return 0;
   };
 
+  const startGuidedSession = async () => {
+    const launchToken = ++guideLaunchTokenRef.current;
+    const lang = getGuideLang();
+    const pack = GUIDE_AUDIO[lang];
+    const introClip = isWimHof ? pack.wimHofIntro : pack.intro;
+
+    setGuidedMode(true);
+    setGuidePlaying(true);
+    setGuideSyncPending(true);
+    guideCueKeyRef.current = '';
+    if (isMuted) setIsMuted(false);
+
+    const introMs = await playGuideClip(introClip, { waitForCompletion: true });
+    if (launchToken !== guideLaunchTokenRef.current) return;
+    const delayMs = introMs > 0 ? GUIDE_INTRO_END_BUFFER_MS : GUIDE_INTRO_OFFSET_FALLBACK_MS;
+
+    if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
+    const timeout = setTimeout(() => {
+      setCompleted(false);
+      setPhaseIndex(0);
+      setLeft(pattern[0].seconds);
+      setWimHofRoundIndex(1);
+      setWimHofBreathCount(1);
+      setSessionLeft(isWimHof ? 0 : sessionMinutes * 60);
+      setRunning(true);
+      setGuideSyncPending(false);
+    }, delayMs);
+    setGuideStartTimeout(timeout);
+  };
+
   const toggleGuide = async () => {
     try {
       if (guideEnabled) {
+        guideLaunchTokenRef.current += 1;
         if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
         setGuideStartTimeout(null);
         setGuideSyncPending(false);
@@ -436,28 +627,8 @@ export default function BreathingScreen({ navigation, route }: any) {
         return;
       }
 
-      const lang = getGuideLang();
-      const pack = GUIDE_AUDIO[lang];
       setGuideEnabled(true);
-      setGuidedMode(true);
-      setGuidePlaying(true);
-      guideCueKeyRef.current = '';
-      if (isMuted) setIsMuted(false);
-
-      const introMs = await playGuideClip(pack.intro);
-      const delayMs = introMs > 0 ? introMs : GUIDE_INTRO_OFFSET_FALLBACK_MS;
-
-      if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
-      setGuideSyncPending(true);
-      const timeout = setTimeout(() => {
-        setCompleted(false);
-        setPhaseIndex(0);
-        setLeft(pattern[0].seconds);
-        setSessionLeft(sessionMinutes * 60);
-        setRunning(true);
-        setGuideSyncPending(false);
-      }, delayMs);
-      setGuideStartTimeout(timeout);
+      await startGuidedSession();
     } catch (error: any) {
       console.error('toggleGuide error', error);
       Alert.alert('Audio Error', error?.message ?? 'Could not play voice guide.');
@@ -483,6 +654,9 @@ export default function BreathingScreen({ navigation, route }: any) {
             return;
           }
         }
+        if (isWimHof && (phase.name === 'Inhale' || phase.name === 'Exhale')) {
+          return;
+        }
         const numberClip = pack.numbers[left];
         if (numberClip) {
           await playGuideClip(numberClip, { volume: 0.7 });
@@ -493,7 +667,7 @@ export default function BreathingScreen({ navigation, route }: any) {
     };
 
     void playCue();
-  }, [guideEnabled, guidedMode, running, showTechniqueMenu, guideSyncPending, completed, pattern, phaseIndex, left, language]);
+  }, [guideEnabled, guidedMode, running, showTechniqueMenu, guideSyncPending, completed, pattern, phaseIndex, left, language, isWimHof]);
 
   useEffect(() => {
     if (!completed || !guideEnabled) return;
@@ -616,9 +790,9 @@ export default function BreathingScreen({ navigation, route }: any) {
     await saveSoundPrefs([]);
   };
 
-  const sessionTimeLabel = `${String(Math.floor(sessionLeft / 60)).padStart(2, '0')}:${String(
-    sessionLeft % 60
-  ).padStart(2, '0')}`;
+  const sessionTimeLabel = isWimHof
+    ? `${wimHofRoundIndex}/${wimHofRounds}`
+    : `${String(Math.floor(sessionLeft / 60)).padStart(2, '0')}:${String(sessionLeft % 60).padStart(2, '0')}`;
 
   return (
     <ImageBackground source={currentBg.src} style={s.bg} imageStyle={s.bgImage} blurRadius={8}>
@@ -655,13 +829,24 @@ export default function BreathingScreen({ navigation, route }: any) {
               ]}
               onPress={toggleGuide}
             >
-              <Ionicons
-                name={guidePlaying ? 'body' : 'body-outline'}
-                size={20}
-                color={guidePlaying ? '#8BFFB7' : guideEnabled ? '#BDA8FF' : '#fff'}
+              <Image
+                source={require('../images/icon-talk.png')}
+                style={[
+                  s.guideIconImage,
+                  {
+                    tintColor: guidePlaying ? '#8BFFB7' : guideEnabled ? '#BDA8FF' : '#fff',
+                  },
+                ]}
+                resizeMode='contain'
               />
             </TouchableOpacity>
-            <TouchableOpacity style={s.iconBtn} onPress={() => setShowCustomize(true)}>
+            <TouchableOpacity
+              style={s.iconBtn}
+              onPress={() => {
+                setCustomizeTab('sounds');
+                setShowCustomize(true);
+              }}
+            >
               <Ionicons
                 name='options-outline'
                 size={20}
@@ -678,7 +863,8 @@ export default function BreathingScreen({ navigation, route }: any) {
               <TouchableOpacity
                 key={name}
                 style={[s.dropdownItem, technique === name && s.dropdownItemActive]}
-                onPress={() => {
+                onPress={async () => {
+                  await resetSessionUi();
                   setTechnique(name);
                   setShowTechniqueMenu(false);
                 }}
@@ -693,10 +879,12 @@ export default function BreathingScreen({ navigation, route }: any) {
           {(() => {
             const rawStep = running ? pattern[phaseIndex].name : completed ? pattern[phaseIndex].name : 'Ready';
             const localizedStep = stepLabel(rawStep);
+            const isWimHofBreathPhase = isWimHof && (rawStep === 'Inhale' || rawStep === 'Exhale');
+            const countdownDisplay = isWimHofBreathPhase ? `${wimHofBreathCount}/${WIM_HOF_BREATHS_PER_ROUND}` : (running ? left : completed ? left : 0);
             return (
           <BreathingCircle
             step={localizedStep}
-            countdown={running ? left : completed ? left : 0}
+            countdown={countdownDisplay}
             duration={pattern[phaseIndex].seconds * 1000}
             isRunning={running && !showTechniqueMenu}
             completed={completed}
@@ -710,50 +898,85 @@ export default function BreathingScreen({ navigation, route }: any) {
         <View style={s.controlsWrap}>
           <View style={s.timerWrap}>
             <Text style={s.timerValue}>{sessionTimeLabel}</Text>
-            <Text style={s.timerLabel}>SESSION TIME</Text>
-            <View style={s.timerOptionsWrap}>
-              {SESSION_OPTIONS.map((min) => (
-                <TouchableOpacity
-                  key={min}
-                  style={[s.timerOptionBtn, sessionMinutes === min && s.timerOptionBtnActive]}
-                  onPress={() => {
-                    setRunning(false);
-                    setCompleted(false);
-                    setSessionMinutes(min);
-                  }}
-                >
-                  <Text style={[s.timerOptionTxt, sessionMinutes === min && s.timerOptionTxtActive]}>{min}m</Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={s.timerLabel}>{isWimHof ? (isSpanish ? 'RONDA ACTUAL' : 'CURRENT ROUND') : 'SESSION TIME'}</Text>
+            {isWimHof ? (
+              <Text style={s.timerHint}>
+                {isSpanish
+                  ? `${wimHofBreathCount}/${WIM_HOF_BREATHS_PER_ROUND} respiraciones`
+                  : `${wimHofBreathCount}/${WIM_HOF_BREATHS_PER_ROUND} breaths`}
+              </Text>
+            ) : null}
+            <View style={s.timerOptionsRow}>
+              <View style={s.timerOptionsWrap}>
+                {(isWimHof ? WIM_HOF_ROUND_OPTIONS : DEFAULT_SESSION_OPTIONS).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      s.timerOptionBtn,
+                      ((isWimHof ? wimHofRounds : sessionMinutes) === option) && s.timerOptionBtnActive,
+                    ]}
+                    onPress={() => {
+                      setRunning(false);
+                      setCompleted(false);
+                      setPhaseIndex(0);
+                      setLeft(pattern[0].seconds);
+                      if (isWimHof) {
+                        setWimHofRounds(option as (typeof WIM_HOF_ROUND_OPTIONS)[number]);
+                        setWimHofRoundIndex(1);
+                        setWimHofBreathCount(1);
+                      } else {
+                        setSessionMinutes(option as (typeof DEFAULT_SESSION_OPTIONS)[number]);
+                      }
+                    }}
+                  >
+                    <Text style={[
+                      s.timerOptionTxt,
+                      ((isWimHof ? wimHofRounds : sessionMinutes) === option) && s.timerOptionTxtActive,
+                    ]}>
+                      {isWimHof ? `${option}x` : `${option}m`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity style={s.infoBtn} onPress={showTechniqueInfo}>
+                <Text style={s.infoBtnText}>i</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
           <TouchableOpacity
-            style={[s.startBtn, running && s.startBtnPaused]}
+            style={[s.startBtn, sessionActive && s.startBtnPaused]}
             onPress={async () => {
-              const next = !running;
+              const next = !sessionActive;
               if (guideEnabled && next === false) {
+                guideLaunchTokenRef.current += 1;
                 await stopGuideClip();
+                if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
+                guideStartTimeoutRef.current = null;
+                setGuideStartTimeout(null);
+                setGuideSyncPending(false);
+                setRunning(false);
                 setGuidePlaying(false);
                 setGuidedMode(false);
               }
               if (completed) {
                 setCompleted(false);
-                setSessionLeft(sessionMinutes * 60);
+                setSessionLeft(isWimHof ? 0 : sessionMinutes * 60);
                 setPhaseIndex(0);
                 setLeft(pattern[0].seconds);
+                setWimHofRoundIndex(1);
+                setWimHofBreathCount(1);
                 guideCueKeyRef.current = '';
               }
-              setRunning(next);
               if (next && guideEnabled) {
-                setGuidePlaying(true);
-                setGuidedMode(true);
-                guideCueKeyRef.current = '';
+                await startGuidedSession();
+              } else {
+                setRunning(next);
               }
               if (next && !soundObj && activeSounds.length === 0) await playOrSwitchSound();
             }}
           >
-            <Text style={s.startBtnText}>{running ? 'Pause' : 'Start'}</Text>
+            <Text style={s.startBtnText}>{sessionActive ? 'Pause' : 'Start'}</Text>
           </TouchableOpacity>
 
         </View>
@@ -810,6 +1033,36 @@ export default function BreathingScreen({ navigation, route }: any) {
               ) : (
                 <>
                   <Text style={s.sectionTitle}>Choose a Sound</Text>
+                  {!soundObj && activeSounds.length === 0 ? (
+                    <Text style={s.sectionSubTitle}>Current Sound: Default</Text>
+                  ) : null}
+                  {soundObj && activeSounds.length === 0 && currentSound ? (
+                    <>
+                      <Text style={s.sectionSubTitle}>Current Sound</Text>
+                      <View style={s.selectedSoundsWrap}>
+                        <View style={s.selectedSoundRow}>
+                          <Image source={currentSound.icon} style={s.selectedSoundIcon} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={s.selectedSoundLabel}>{currentSound.label}</Text>
+                            <Slider
+                              style={{ width: '100%', height: 30 }}
+                              minimumValue={0}
+                              maximumValue={1}
+                              step={0.05}
+                              value={baseSoundVolume}
+                              onValueChange={(v) => void updateBaseSoundVolume(v)}
+                              minimumTrackTintColor='#9D8CFF'
+                              maximumTrackTintColor='rgba(255,255,255,0.4)'
+                              thumbTintColor='#E7DEFF'
+                            />
+                          </View>
+                          <TouchableOpacity onPress={() => void stopBaseSound()}>
+                            <Ionicons name='close-circle' size={22} color='#D9DFFF' />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </>
+                  ) : null}
                   {activeSounds.length > 0 ? (
                     <>
                       <Text style={s.sectionSubTitle}>Selected Sounds ({activeSounds.length}/6)</Text>
@@ -852,8 +1105,12 @@ export default function BreathingScreen({ navigation, route }: any) {
                     {SOUNDS.map((snd) => (
                       <TouchableOpacity
                         key={snd.key}
-                        style={[s.soundItem, activeSounds.some((a) => a.key === snd.key) && s.soundItemActive]}
-                        onPress={() => void addOrToggleSound(snd.key)}
+                        style={[
+                          s.soundItem,
+                          activeSounds.some((a) => a.key === snd.key) && s.soundItemActive,
+                          soundObj && activeSounds.length === 0 && soundKey === snd.key && s.soundItemActive,
+                        ]}
+                        onPress={() => void (soundObj && activeSounds.length === 0 ? playOrSwitchSound(snd.key) : addOrToggleSound(snd.key))}
                       >
                         <Image source={snd.icon} style={s.soundIcon} />
                         <Text style={s.soundLabel}>{snd.label}</Text>
@@ -916,6 +1173,10 @@ const s = StyleSheet.create({
     borderColor: 'rgba(189,168,255,0.75)',
     backgroundColor: 'rgba(140,110,255,0.22)',
   },
+  guideIconImage: {
+    width: 18,
+    height: 18,
+  },
   topRightActions: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
   dropdown: {
     position: 'absolute',
@@ -951,7 +1212,14 @@ const s = StyleSheet.create({
     letterSpacing: 2.8,
     marginTop: 1,
   },
-  timerOptionsWrap: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  timerHint: {
+    color: 'rgba(217,226,255,0.88)',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  timerOptionsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  timerOptionsWrap: { flexDirection: 'row', gap: 8 },
   timerOptionBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -966,6 +1234,17 @@ const s = StyleSheet.create({
   },
   timerOptionTxt: { color: '#D9E2FF', fontSize: 12, fontWeight: '600' },
   timerOptionTxtActive: { color: '#FFF', fontWeight: '700' },
+  infoBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.38)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  infoBtnText: { color: '#F1F4FF', fontSize: 15, fontWeight: '700' },
   startBtn: {
     backgroundColor: 'rgba(124,122,255,0.65)',
     borderWidth: 1,

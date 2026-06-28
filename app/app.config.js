@@ -1,7 +1,7 @@
 module.exports = {
   name: 'PerfectFlow',
   slug: 'perfectflow',
-  version: '1.0.8',
+  version: '1.0.9',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
@@ -12,10 +12,15 @@ module.exports = {
     resizeMode: 'contain',
     backgroundColor: '#ffffff',
   },
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: 'com.perfecten.perfectflow',
+ios: {
+  supportsTablet: true,
+  bundleIdentifier: 'com.perfecten.perfectflow',
+  icon: './assets/icon.png',
+  googleServicesFile: './GoogleService-Info.plist',
+  infoPlist: {
+    ITSAppUsesNonExemptEncryption: false,
   },
+},
   android: {
     package: 'com.perfecten.perfectflow',
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
@@ -30,6 +35,7 @@ module.exports = {
     favicon: './assets/favicon.png',
   },
   plugins: [
+    './plugins/with-modular-headers',
     'expo-web-browser',
     '@react-native-google-signin/google-signin',
     'expo-font',

@@ -12,7 +12,7 @@ export default function BreathingCircle({
   doneBody = 'How do you feel?',
 }: {
   step: string;
-  countdown: number;
+  countdown: number | string;
   duration: number;
   isRunning: boolean;
   completed?: boolean;
