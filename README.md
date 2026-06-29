@@ -1,135 +1,144 @@
 # PerfectFlow
 
-## Run the app
+La app Expo esta dentro de la carpeta `app/`.
+
+Entra ahi antes de correr cualquier comando:
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+```
+
+## Run
+
+Instala dependencias:
 
 ```bash
 npm install
-npx expo run:android
 ```
 
-## Build Android para Google Play con Expo/EAS
-
-Desde la raiz del proyecto:
+Levanta Metro:
 
 ```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
-npm run build:android
+npm run start
 ```
 
-Ese script ejecuta:
+Instala y abre la app nativa en Android:
 
 ```bash
-npx eas-cli@latest build --platform android --profile production
+npm run android
 ```
 
-Cuando termine, Expo/EAS muestra un link a un archivo `.aab`. Ese es el archivo que se sube a Google Play Console.
+Si el build local falla con Gradle o Java, usa JDK 17:
 
-Antes de generar el build, puedes verificar la sesion de Expo:
+```bash
+export JAVA_HOME=/opt/homebrew/Cellar/openjdk@17/17.0.19/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
+npm run android
+```
+
+Si estas usando Development Build:
+
+```bash
+npx expo start -c --dev-client
+```
+
+## Emuladores de varios tamanos
+
+Para probar la UI en pantallas distintas, crea varios emuladores en:
+
+```text
+Android Studio > Device Manager > Create Device
+```
+
+Recomendados:
+
+```text
+Telefono chico: Pixel 4
+Telefono grande: Pixel 9 Pro XL
+Tablet: Pixel Tablet
+```
+
+Uso:
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+npm run android
+```
+
+Si ya tienes un Development Build instalado en ese emulador:
+
+```bash
+npx expo start -c --dev-client
+```
+
+## Build Android
+
+Confirma Expo:
 
 ```bash
 npx eas-cli@latest whoami
 ```
 
-Tambien puedes confirmar las credenciales Android:
+Confirma credenciales:
 
 ```bash
 npx eas-cli@latest credentials -p android
 ```
 
-Debe usar estos datos:
+El build de Google Play debe usar:
 
 ```text
 Application Identifier: com.perfecten.perfectflow
-Keystore: Play Store keystore (Default)
-SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
+Build credentials: Play Store keystore (Default)
+Upload key SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
 ```
 
-Para subir despues de tener un `.aab` valido:
+Para subir a Google Play Console, genera un `.aab`:
+
+```bash
+npm run build:android
+```
+
+Si quieres ese mismo `.aab` pero compilado localmente:
+
+```bash
+npm run build:android:local
+```
+
+Para instalar la app directamente en tu telefono, genera un `.apk`:
+
+```bash
+npm run build:android:previewlocal
+```
+
+Para generar un Development Build local y seguir trabajando con Metro:
+
+```bash
+npm run build:android:devlocal
+```
+
+Para generar el build local de iPhone que se sube a Apple, usa:
+
+```bash
+npm run build:ios:local
+```
+
+Ese flujo genera un `.ipa`.
+
+## Submit
+
+Si EAS Submit ya tiene Google Service Account configurado:
 
 ```bash
 npm run submit:android
 ```
 
-## Start Metro (clean cache)
+Si no, sube el `.aab` manualmente en Google Play Console.
 
-Use this when changes are not reflecting, audio is not playing, or after native/config updates:
+## Mas detalles
 
-```bash
-npx expo start -c
+El paso a paso completo esta en:
+
+```text
+app/README.md
 ```
-
-## Si sale Google Sign-In Error (Expo Go vs Dev Build)
-
-Ese error significa que abriste Expo Go, no tu Development Build (la que sí tiene `react-native-google-signin`).
-
-Haz esto exacto:
-
-1. Cierra la app del emulador.
-2. En terminal, dentro del proyecto:
-
-```bash
-npx expo run:android
-```
-
-3. Cuando termine de instalar, arranca Metro:
-
-```bash
-npx expo start -c --dev-client
-```
-
-4. Abre la app instalada que se llama PerfectFlow (no Expo Go).
-5. Si sale selector de app, elige `com.perfecten.perfectflow`.
-
-## Si aparece: "No development build is installed"
-
-Ejecuta esto en orden:
-
-```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-export PATH="$JAVA_HOME/bin:$PATH"
-
-# Instala de nuevo la app nativa en el emulador
-npx expo run:android
-
-# Luego levanta metro para dev client
-npx expo start -c --dev-client
-```
-
-Después abre la app **PerfectFlow** (no Expo Go).
-
-## Si sale `Google sign-in failed (7): NETWORK_ERROR`
-
-Ese error normalmente es conectividad/proxy/Google Play Services dentro del emulador (no Firebase config).
-
-Haz esto exacto:
-
-1. Verifica internet dentro del emulador:
-   - Abre Chrome en el emulador y entra a `https://accounts.google.com`
-
-2. Quita proxy global del emulador:
-
-```bash
-adb shell settings put global http_proxy :0
-adb shell settings put global https_proxy :0
-```
-
-3. Reinicia limpio el emulador:
-
-```bash
-adb emu kill
-```
-
-Luego vuelve a abrir el emulador con **Cold Boot** desde Android Studio Device Manager.
-
-4. Reinstala app + corre Metro en dev client:
-
-```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
-npx expo run:android
-npx expo start -c --dev-client
-```
-
-5. Si sigue fallando:
-   - Borra datos de **Google Play Services** y **Google app** dentro del emulador.
-   - Vuelve a iniciar sesión con tu cuenta Google en el emulador.

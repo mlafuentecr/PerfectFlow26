@@ -58,29 +58,29 @@ const MOOD_SESSIONS: Array<{
 ];
 
 const INSIGHTS: Array<{ hook: string; message: string }> = [
-  { hook: 'Feeling anxious?', message: 'A slower exhale can help your body feel safer and more grounded.' },
-  { hook: 'Feeling stressed?', message: 'Take 5 minutes to slow your rhythm and reset your mind.' },
-  { hook: 'Need focus?', message: 'A steady breathing pattern can help clear mental noise.' },
-  { hook: 'Before sleep', message: 'Slow breathing can help your body shift into rest mode.' },
-  { hook: 'Mind racing?', message: 'Try inhale 4, exhale 6 for a gentler mental pace.' },
-  { hook: 'Low energy?', message: 'A short active breathing cycle can wake up your attention.' },
-  { hook: 'Heavy day?', message: 'One mindful minute is enough to interrupt tension.' },
-  { hook: 'Need balance?', message: 'Consistent breathing creates emotional stability over time.' },
-  { hook: 'Overthinking?', message: 'Return to your breath and your thoughts will soften.' },
-  { hook: 'Quick reset', message: 'Breathe in calm, breathe out pressure.' },
+  { hook: 'Why longer exhales help', message: 'A longer exhale can signal safety to your nervous system and reduce physical tension.' },
+  { hook: 'Box Breathing basics', message: 'Box Breathing uses equal counts to organize attention and reduce mental reactivity.' },
+  { hook: 'Before sleep', message: 'Gentle breathing works better than deep forced breaths when your goal is to wind down.' },
+  { hook: 'Coherent Breathing', message: 'Around five seconds in and five seconds out can support steadier focus and regulation.' },
+  { hook: 'When stress spikes', message: 'Simple patterns are easier to follow under pressure than complex breath instructions.' },
+  { hook: 'Why rhythm matters', message: 'Consistency often helps more than intensity when you are building a calming habit.' },
+  { hook: 'For racing thoughts', message: 'A slower breathing cadence can reduce internal noise before you try to think clearly.' },
+  { hook: 'Short daily practice', message: 'Two to five minutes a day is enough to train a more reliable reset response over time.' },
+  { hook: 'Hold with care', message: 'If holds feel stressful, shorten them and keep the overall rhythm comfortable.' },
+  { hook: 'Learn the why', message: 'Small bits of breath education make it easier to choose the right tool for the moment.' },
 ];
 
 const INSIGHTS_ES: Array<{ hook: string; message: string }> = [
-  { hook: '¿Ansiedad?', message: 'Exhalar más lento puede ayudar a tu cuerpo a sentirse más seguro y en calma.' },
-  { hook: '¿Estrés?', message: 'Toma 5 minutos para bajar el ritmo y reiniciar tu mente.' },
-  { hook: '¿Necesitas enfoque?', message: 'Un patrón de respiración constante ayuda a despejar el ruido mental.' },
-  { hook: 'Antes de dormir', message: 'Respirar lento ayuda a tu cuerpo a entrar en modo descanso.' },
-  { hook: '¿Mente acelerada?', message: 'Prueba inhalar 4, exhalar 6 para un ritmo mental más suave.' },
-  { hook: '¿Baja energía?', message: 'Un ciclo corto de respiración activa despierta tu atención.' },
-  { hook: '¿Día pesado?', message: 'Un minuto consciente basta para interrumpir la tensión.' },
-  { hook: '¿Necesitas equilibrio?', message: 'La respiración constante crea estabilidad emocional con el tiempo.' },
-  { hook: '¿Sobrepensando?', message: 'Vuelve a tu respiración y tus pensamientos se suavizan.' },
-  { hook: 'Reinicio rápido', message: 'Inhala calma, exhala presión.' },
+  { hook: 'Por qué ayudan las exhalaciones largas', message: 'Una exhalación más larga puede enviar señales de seguridad a tu sistema nervioso y bajar la tensión física.' },
+  { hook: 'Base de Box Breathing', message: 'La respiración caja usa tiempos iguales para organizar la atención y reducir la reactividad mental.' },
+  { hook: 'Antes de dormir', message: 'La respiración suave funciona mejor que forzar respiraciones profundas cuando buscas descanso.' },
+  { hook: 'Respiración coherente', message: 'Unos cinco segundos al inhalar y cinco al exhalar pueden ayudar al enfoque y la regulación.' },
+  { hook: 'Cuando sube el estrés', message: 'Los patrones simples son más fáciles de seguir bajo presión que instrucciones complejas.' },
+  { hook: 'Por qué importa el ritmo', message: 'La consistencia suele ayudar más que la intensidad cuando estás creando un hábito de calma.' },
+  { hook: 'Para pensamientos acelerados', message: 'Un ritmo respiratorio más lento puede bajar el ruido interno antes de intentar pensar con claridad.' },
+  { hook: 'Práctica diaria corta', message: 'Dos a cinco minutos al día bastan para entrenar una respuesta de reinicio más confiable.' },
+  { hook: 'Sostén con cuidado', message: 'Si las pausas te generan estrés, acórtalas y mantén el ritmo general cómodo.' },
+  { hook: 'Aprende el porqué', message: 'Pequeñas dosis de educación sobre respiración facilitan elegir la herramienta correcta.' },
 ];
 
 const MOOD_TITLE_ES: Record<string, string> = {
@@ -241,36 +241,24 @@ export default function HomeScreen({ navigation }: Props) {
               style={[s.heroOverlay, compact && s.heroOverlayCompact]}
             >
               <View style={s.heroContent}>
-                <Text style={s.heroTitle}>{language === 'es' ? 'Respira y reinicia' : 'Breathe and Reset'}</Text>
-                <Text style={s.heroDesc}>
-                  {language === 'es' ? 'Toma una respiración consciente y reinicia tu estado.' : 'Take a mindful breath and reset your mood.'}
-                </Text>
-                <View style={s.heroBtn}>
-                  <Text style={s.heroBtnText}>{t('startBreathing')}</Text>
+                <View style={s.heroRow}>
+                  <View style={s.heroCopyWrap}>
+                  <Text style={s.heroTitle}>{language === 'es' ? 'Respira y reinicia' : 'Breathe and Reset'}</Text>
+                  <Text style={s.heroDesc}>
+                    {language === 'es' ? 'Toma una respiración consciente y reinicia tu estado.' : 'Take a mindful breath and reset your mood.'}
+                  </Text>
+                  </View>
+                  <View style={s.heroFooterRow}>
+                    <View style={s.heroBtn}>
+                      <Text style={s.heroBtnText}>{t('startBreathing')}</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
             </LinearGradient>
           </ImageBackground>
         </Pressable>
 
-        <Pressable style={[s.insightCard, compact && s.insightCardCompact]} onPress={() => navigation.navigate('insights')}>
-          <ImageBackground source={require('../assets/images/daily-insight.png')} style={[s.insightGradient, compact && s.insightGradientCompact]}>
-            <LinearGradient
-              colors={['rgba(5,15,48,0.84)', 'rgba(5,15,48,0.62)', 'rgba(5,15,48,0.20)']}
-              locations={[0, 0.58, 1]}
-              start={{ x: 0.5, y: 1 }}
-              end={{ x: 0.5, y: 0 }}
-              style={s.insightOverlay}
-            >
-              <View style={[s.insightLeft, compact && s.insightLeftCompact]}>
-                <Text style={s.insightTitle}>{t('dailyInsight')}</Text>
-                <Text style={s.insightHook}>{insights[insightIndex].hook}</Text>
-                <Text style={s.insightMsg}>{insights[insightIndex].message}</Text>
-              </View>
-            </LinearGradient>
-          </ImageBackground>
-        </Pressable>
-        
         <View style={[s.quickHeaderRow, compact && s.quickHeaderRowCompact]}>
           <Text style={s.quickTitle}>{language === 'es' ? 'Cambia tu estado' : 'Shift Your Mood'}</Text>
           <Text style={s.quickHint}>{language === 'es' ? 'Desliza' : 'Swipe'}</Text>
@@ -300,6 +288,30 @@ export default function HomeScreen({ navigation }: Props) {
             </Pressable>
           ))}
         </ScrollView>
+
+        <Pressable style={[s.insightCard, compact && s.insightCardCompact]} onPress={() => navigation.navigate('insights')}>
+          <ImageBackground source={require('../assets/images/daily-insight.png')} style={[s.insightGradient, compact && s.insightGradientCompact]}>
+            <LinearGradient
+              colors={['rgba(5,15,48,0.84)', 'rgba(5,15,48,0.62)', 'rgba(5,15,48,0.20)']}
+              locations={[0, 0.58, 1]}
+              start={{ x: 0.5, y: 1 }}
+              end={{ x: 0.5, y: 0 }}
+              style={s.insightOverlay}
+            >
+              <View style={[s.insightLeft, compact && s.insightLeftCompact]}>
+                <View style={s.insightTopRow}>
+                  <Text style={s.insightTitle}>{t('dailyInsight')}</Text>
+                  <View style={s.learnPill}>
+                    <Text style={s.learnPillText}>{t('learn')}</Text>
+                  </View>
+                </View>
+                <Text style={s.insightHook}>{insights[insightIndex].hook}</Text>
+                <Text style={s.insightMsg}>{insights[insightIndex].message}</Text>
+              </View>
+            </LinearGradient>
+          </ImageBackground>
+        </Pressable>
+
         <View style={[s.streakCard, compact && s.streakCardCompact]}>
           <View style={s.streakHeaderRow}>
             <View style={s.streakHeaderLeft}>
@@ -458,23 +470,26 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
   },
   heroCardCompact: { marginBottom: 10 },
-  heroImage: { minHeight: 184, justifyContent: 'flex-end' },
-  heroImageCompact: { minHeight: 156 },
+  heroImage: { minHeight: 146, justifyContent: 'flex-end' },
+  heroImageCompact: { minHeight: 128 },
   heroImageStyle: { borderRadius: 28 },
   heroOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: 18,
-  },
-  heroOverlayCompact: { padding: 12 },
-  heroContent: { width: '78%', minHeight: 0 },
-  heroTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
-  heroDesc: { color: '#DCE7FF', marginTop: 8, fontSize: 14, lineHeight: 20, maxWidth: 300, fontWeight: '500' },
-  heroBtn: {
-    marginTop: 16,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 26,
+    paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  heroOverlayCompact: { paddingHorizontal: 12, paddingVertical: 9 },
+  heroContent: { minHeight: 0 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
+  heroCopyWrap: { flex: 1, gap: 5, maxWidth: '66%' },
+  heroFooterRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end' },
+  heroTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
+  heroDesc: { color: '#DCE7FF', fontSize: 13, lineHeight: 18, fontWeight: '500' },
+  heroBtn: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(186,170,255,0.92)',
@@ -484,7 +499,7 @@ const s = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
   },
-  heroBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  heroBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   insightCard: {
     borderRadius: 26,
     borderWidth: 1,
@@ -514,7 +529,17 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   insightLeftCompact: { paddingHorizontal: 16, paddingVertical: 12, paddingRight: 38 },
+  insightTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 },
   insightTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 6, letterSpacing: -0.2 },
+  learnPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(106,96,232,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,209,255,0.65)',
+  },
+  learnPillText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
   insightHook: { color: '#9E8BFF', fontSize: 15, fontWeight: '700', marginBottom: 6 },
   insightMsg: { color: '#D6E2FF', fontSize: 14, lineHeight: 20, maxWidth: 370, fontWeight: '500' },
   quickHeaderRow: {

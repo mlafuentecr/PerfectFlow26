@@ -6,6 +6,7 @@ import IndexScreen from './app/index';
 import HomeScreen from './app/home';
 import BreathingScreen from './app/breathing';
 import InsightsScreen from './app/insights';
+import TappingScreen from './app/tapping';
 import LearnDetailScreen from './app/learnDetail';
 import SessionsScreen from './app/sessions';
 import ProgressScreen from './app/progress';
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   home: undefined;
   breathing: { technique?: string } | undefined;
   insights: undefined;
+  tapping: undefined;
   learnDetail: { itemId: string };
   sessions: undefined;
   progress: undefined;
@@ -45,6 +47,7 @@ export default function App() {
           <Stack.Screen name="home" component={HomeScreen} />
           <Stack.Screen name="breathing" component={BreathingScreen} />
           <Stack.Screen name="insights" component={InsightsScreen} />
+          <Stack.Screen name="tapping" component={TappingScreen} />
           <Stack.Screen name="learnDetail" component={LearnDetailScreen} />
           <Stack.Screen name="sessions" component={SessionsScreen} />
           <Stack.Screen name="progress" component={ProgressScreen} />

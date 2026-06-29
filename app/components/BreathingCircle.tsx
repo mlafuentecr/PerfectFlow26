@@ -3,25 +3,30 @@ import { Animated, View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function BreathingCircle({
+  phase,
   step,
   countdown,
   duration,
   isRunning,
   completed,
+  variant = 'circle',
   doneTitle = 'You did it!',
   doneBody = 'How do you feel?',
 }: {
+  phase?: 'Ready' | 'Inhale' | 'Exhale' | 'Hold';
   step: string;
   countdown: number | string;
   duration: number;
   isRunning: boolean;
   completed?: boolean;
+  variant?: 'circle' | 'box';
   doneTitle?: string;
   doneBody?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const ringPulse = useRef(new Animated.Value(0)).current;
   const ringLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const breathingPhase = phase ?? 'Ready';
 
   useEffect(() => {
     if (completed) {
@@ -34,10 +39,10 @@ export default function BreathingCircle({
       scale.setValue(1);
       return;
     }
-    if (step === 'Hold') return;
-    const toValue = step === 'Inhale' ? 1.25 : 0.9;
+    if (breathingPhase === 'Hold') return;
+    const toValue = breathingPhase === 'Inhale' ? 1.25 : 0.9;
     Animated.timing(scale, { toValue, duration, useNativeDriver: true }).start();
-  }, [step, duration, isRunning, scale, completed]);
+  }, [breathingPhase, duration, isRunning, scale, completed]);
 
   useEffect(() => {
     if (completed) {
@@ -52,7 +57,7 @@ export default function BreathingCircle({
       ringPulse.setValue(0);
       return;
     }
-    if (step === 'Hold') {
+    if (breathingPhase === 'Hold') {
       ringLoopRef.current?.stop();
       ringLoopRef.current = null;
       ringPulse.setValue(0);
@@ -68,13 +73,14 @@ export default function BreathingCircle({
       })
     );
     ringLoopRef.current.start();
-  }, [isRunning, step, ringPulse, completed]);
+  }, [isRunning, breathingPhase, ringPulse, completed]);
 
   return (
     <View style={s.wrap}>
       <Animated.View
         style={[
           s.outerRing,
+          variant === 'box' && s.outerRingBox,
           {
             transform: [
               {
@@ -91,13 +97,14 @@ export default function BreathingCircle({
           },
         ]}
       >
-        <View style={s.ringGlow} />
+        <View style={[s.ringGlow, variant === 'box' && s.ringGlowBox]} />
       </Animated.View>
 
       <Animated.View
         style={[
           s.circle,
-          step === 'Hold' && !completed && s.circleHold,
+          variant === 'box' && s.circleBox,
+          breathingPhase === 'Hold' && !completed && s.circleHold,
           completed && s.circleDone,
           { transform: [{ scale }] },
         ]}
@@ -144,12 +151,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(100,128,255,0.06)',
   },
+  outerRingBox: {
+    borderRadius: 36,
+  },
   ringGlow: {
     width: 236,
     height: 236,
     borderRadius: 118,
     borderWidth: 1,
     borderColor: 'rgba(137,192,255,0.35)',
+  },
+  ringGlowBox: {
+    borderRadius: 28,
   },
   circle: {
     width: 220,
@@ -165,6 +178,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  circleBox: {
+    borderRadius: 30,
   },
   circleDone: {
     borderColor: 'rgba(156,255,200,0.9)',

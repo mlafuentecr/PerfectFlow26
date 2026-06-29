@@ -1,360 +1,463 @@
 # PerfectFlow
 
-## Carpeta correcta
+React Native + Expo application for guided breathing exercises.
 
-El proyecto Expo esta dentro de:
+---
 
-```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+# Table of Contents
+
+- Project Structure
+- Requirements
+- Installation
+- Development
+- Android Development
+- iOS Development
+- Android Builds
+- iOS Builds
+- Google Play Submission
+- Firebase & Google Sign-In
+- Testing
+- Troubleshooting
+
+---
+
+# Useful Scripts
+npm start
+npm run android
+npm run ios
+npm run build:android
+npm run build:android:local
+npm run build:android:previewlocal
+npm run build:android:devlocal
+npm run build:ios:local
+npm run submit:android
+
+---
+
+
+# Project Structure
+
+The Expo project lives inside:
+
+```text
+/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
 ```
 
-Todos los comandos de `npm`, `expo` y `eas` se corren desde esa carpeta.
+Always run `npm`, `expo`, `npx` and `eas` commands from this folder.
 
-Si corres comandos desde `/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow`, npm no va a encontrar `package.json`.
+If commands are executed from:
 
-## Instalar dependencias
+```text
+/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
+```
+
+npm will not find `package.json`.
+
+---
+
+# Requirements
+
+- Node.js
+- npm
+- Android Studio
+- Xcode (macOS)
+- Expo CLI
+- EAS CLI
+- Java 17 (Android builds)
+
+---
+
+# Installation
 
 ```bash
 cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
 npm install
 ```
 
-## Correr la app en desarrollo
+---
 
-Para levantar Metro:
+# Development
 
-```bash
-npm run start
-```
-
-Para instalar y abrir la app nativa en Android:
+## Start Metro
 
 ```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
-export JAVA_HOME=/opt/homebrew/Cellar/openjdk@17/17.0.19/libexec/openjdk.jdk/Contents/Home
-export PATH="$JAVA_HOME/bin:$PATH"
-npm run android
+npm start
 ```
 
-Ese comando ejecuta:
+or
 
 ```bash
-expo run:android
+npx expo start
 ```
 
-En esta maquina, Android debe compilarse con JDK 17. Si Gradle falla con Java 25, corre:
-
-```bash
-export JAVA_HOME=/opt/homebrew/Cellar/openjdk@17/17.0.19/libexec/openjdk.jdk/Contents/Home
-export PATH="$JAVA_HOME/bin:$PATH"
-npm run android
-```
-
-Para limpiar cache cuando algo no se actualiza:
+## Clear Metro cache
 
 ```bash
 npx expo start -c
 ```
 
-Si estas usando Development Build, usa:
+---
+
+# Android Development
+
+## Configure Java 17
+
+This project **must** be compiled using JDK 17.
 
 ```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
-npm run build:android:devlocal
-
-npx expo start -c --dev-client
+export JAVA_HOME=/opt/homebrew/Cellar/openjdk@17/17.0.19/libexec/openjdk.jdk/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
-Importante: Google Sign-In no funciona bien en Expo Go porque esta app usa `@react-native-google-signin/google-signin`. Para probar login con Google, abre la app instalada **PerfectFlow**, no Expo Go.
-
-## Probar en emuladores de varios tamanos
-
-Si quieres revisar la UI en pantallas mas grandes o mas chicas, crea varios Android Virtual Devices en Android Studio.
-
-Ruta:
-
-```text
-Android Studio > Device Manager > Create Device
-```
-
-Tamanos recomendados:
-
-```text
-Telefono chico: Pixel 4 o similar
-Telefono grande: Pixel 9 Pro XL o similar
-Tablet compacta: Pixel Tablet
-```
-
-Flujo recomendado:
-
-1. Abre el emulador que quieres usar desde Android Studio.
-2. Entra al proyecto:
-
-```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
-```
-
-3. Instala y abre la app en el emulador activo:
+## Run Android
 
 ```bash
 npm run android
 ```
 
-4. Si ya tienes un Development Build instalado en ese emulador, levanta Metro con:
+Internally this executes:
 
 ```bash
-npx expo start -c --dev-client
+expo run:android
 ```
 
-Notas:
+If Gradle starts using Java 25, export Java 17 again before running.
 
-```text
-npm run android / expo run:android = recompila la app nativa en el emulador activo
-npx expo start --dev-client = reutiliza el Development Build ya instalado
-```
+---
 
-Si Gradle falla en esta maquina por Java 25, usa JDK 17 antes de correr `npm run android`.
+## Development Build
 
-## Build Android para Google Play
-
-Antes del build, confirma que estas logueado en Expo:
-
-```bash
-npx eas-cli@latest whoami
-```
-
-Confirma las credenciales Android:
-
-```bash
-npx eas-cli@latest credentials -p android
-```
-
-Debe usar:
-
-```text
-Project: perfectflow
-Application Identifier: com.perfecten.perfectflow
-Build credentials: Play Store keystore (Default)
-Upload key SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
-```
-
-## Build Android
-
-### Opcion 1: `.aab` para Google Play
-
-Usa este flujo cuando vas a subir la app a Google Play Console, por ejemplo en Open Testing, Closed Testing o Production.
-
-Build remoto:
-
-```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
-npm run build:android
-```
-
-Ese script ejecuta:
-
-```bash
-npx eas-cli@latest build --platform android --profile production
-```
-
-Build local:
-Simpre cambiar la version en /app/app.config.js
-```bash
-npm run build:android:local
-```
-
-Ese script fuerza JDK 17 automaticamente antes de correr EAS local, para evitar fallos de Gradle con Java 25.
-
-Resultado esperado:
-
-```text
-.aab
-```
-
-Ese archivo `.aab` es el que se sube a Google Play Console.
-
-El perfil `production` usa `autoIncrement`, asi que EAS sube el `versionCode` automaticamente en cada build.
-
-### Opcion 2: `.apk` para instalar directo en el telefono
-
-Usa este flujo cuando solo quieres probar la app instalada manualmente en Android, sin depender de Metro o del dev launcher.
-
-```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
-npm run build:android:previewlocal
-```
-
-Resultado esperado:
-
-```text
-.apk
-```
-
-Ese archivo `.apk` no se sube a Google Play Console. Ese archivo se instala directo en el telefono.
-
-### Opcion 3: Development Build para iterar rapido
-
-Usa este flujo cuando quieres un cliente de desarrollo para abrir la app con Metro y probar cambios frecuentemente.
+Build the native development client:
 
 ```bash
 npm run build:android:devlocal
 ```
 
-Ese comando tambien fuerza JDK 17 y genera el cliente de desarrollo localmente.
-
-## Build iOS
-
-### `.ipa` para subir a Apple
-
-Usa este flujo cuando quieres generar el build de iPhone que se sube a App Store Connect o Transporter.
+Start Metro:
 
 ```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+npx expo start -c --dev-client
+```
 
-eas build --platform ios
-eas submit --platform ios
+> Google Sign-In does **not** work correctly in Expo Go because this project uses `@react-native-google-signin/google-signin`.
 
+Always test using the installed **PerfectFlow Development Build**.
 
+---
+
+# iOS Development
+
+Generate a local development build:
+
+```bash
 npm run build:ios:local
-eas submit --platform ios --path ./builds/PerfectFlow.ipa
 ```
 
-Ese script ejecuta:
+---
 
-```bash
-npx eas-cli@latest build --platform ios --profile production --local
-```
+# Android Builds
 
-Resultado esperado:
+## Production (.aab)
 
-```text
-.ipa
-```
+Use this build for Google Play.
 
-Ese archivo `.ipa` es el que se sube a Apple.
-
-Notas:
-
-```text
-App Store Connect / Transporter aceptan .ipa
-El simulador usa .app, pero eso no se sube a Apple
-```
-
-## Subir a Google Play desde EAS
-
-Si ya tienes configurado el Google Service Account para submissions:
-
-```bash
-npm run submit:android
-```
-
-Ese script ejecuta:
-
-```bash
-npx eas-cli@latest submit --platform android --profile production
-```
-
-Si no tienes el service account configurado, sube el `.aab` manualmente en Google Play Console.
-
-## Firebase y Google Sign-In
-
-La app Android en Firebase debe ser:
-
-```text
-Package name: com.perfecten.perfectflow
-```
-
-En Firebase agrega el SHA-1 de la upload key:
-
-```text
-SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
-```
-
-Despues de cambiar fingerprints en Firebase:
-
-1. Descarga `google-services.json`.
-2. Ponlo en esta carpeta:
-
-```text
-/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app/google-services.json
-```
-
-3. Genera un build nuevo con:
+Remote build:
 
 ```bash
 npm run build:android
 ```
 
-## Errores comunes
-
-### `npm error enoent Could not read package.json`
-
-Estas en la carpeta equivocada. Entra primero a:
+Internally:
 
 ```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+npx eas-cli@latest build --platform android --profile production
 ```
 
-### `google-services.json is missing`
+---
 
-Confirma que existe:
+## Local Production Build
 
-```bash
-ls google-services.json
+Before building locally, update the version inside:
+
+```text
+app.config.js
 ```
 
-Tambien confirma que `.easignore` no lo este excluyendo.
-
-### `Version code has already been used`
-
-Genera otro build. El perfil `production` tiene `autoIncrement`, asi que el siguiente build debe usar un `versionCode` nuevo.
-
-```bash
-npm run build:android
-```
-
-### `This account has used its Android builds from the Free plan this month`
-
-Agotaste la cuota mensual de builds remotos de Android en Expo. Tienes tres opciones:
-
-1. Esperar al reinicio de cuota y volver a correr `npm run build:android`.
-2. Cambiar de plan en Expo.
-3. Compilar localmente:
+Then run:
 
 ```bash
 npm run build:android:local
 ```
 
-### `signed with the wrong key`
+Output:
 
-Revisa las credenciales:
+```text
+.aab
+```
+
+The production profile automatically increments the `versionCode`.
+
+---
+
+## Preview APK
+
+For manual installation without Metro.
+
+```bash
+npm run build:android:previewlocal
+```
+
+Output:
+
+```text
+.apk
+```
+
+This APK should **not** be uploaded to Google Play.
+
+---
+
+## Development Build
+
+```bash
+npm run build:android:devlocal
+```
+
+Generates a Development Client.
+
+---
+
+# iOS Builds
+
+## Production IPA
+
+Remote build:
+
+```bash
+eas build --platform ios
+```
+
+Submit:
+
+```bash
+eas submit --platform ios
+```
+
+Local build:
+
+```bash
+npm run build:ios:local
+```
+
+Submit manually:
+
+```bash
+eas submit --platform ios --path ./builds/PerfectFlow.ipa
+```
+
+Output:
+
+```text
+.ipa
+```
+
+---
+
+# Google Play Submission
+
+Verify Expo account:
+
+```bash
+npx eas-cli@latest whoami
+```
+
+Verify Android credentials:
 
 ```bash
 npx eas-cli@latest credentials -p android
 ```
 
-Debe aparecer como default:
+Expected:
 
-```text
-Play Store keystore (Default)
-SHA1: 62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
+```
+Project:
+perfectflow
+
+Application ID:
+com.perfecten.perfectflow
+
+Play Store Keystore:
+Default
+
+SHA1:
+62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
 ```
 
-### `Google sign-in failed (10): DEVELOPER_ERROR`
+Automatic submission:
 
-Normalmente significa que Firebase no tiene el SHA correcto o el `google-services.json` no corresponde al package:
+```bash
+npm run submit:android
+```
+
+If submissions are not configured, upload the generated `.aab` manually through Google Play Console.
+
+---
+
+# Firebase & Google Sign-In
+
+Android package:
 
 ```text
 com.perfecten.perfectflow
 ```
 
-Revisa Firebase, descarga de nuevo `google-services.json` y genera otro build.
+Required SHA1:
 
-### `Google sign-in failed (7): NETWORK_ERROR`
+```text
+62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
+```
 
-Normalmente es internet, proxy o Google Play Services en el emulador.
+After updating Firebase:
 
-Prueba:
+1. Download `google-services.json`
+2. Place it here:
+
+```text
+app/google-services.json
+```
+
+3. Generate a new production build:
+
+```bash
+npm run build:android
+```
+
+---
+
+# Testing
+
+## Recommended Android Emulators
+
+Create multiple Android Virtual Devices:
+
+```
+Android Studio
+→ Device Manager
+→ Create Device
+```
+
+Recommended:
+
+- Pixel 4
+- Pixel 9 Pro XL
+- Pixel Tablet
+
+Workflow:
+
+1. Start emulator.
+2. Install app.
+
+```bash
+npm run android
+```
+
+3. Launch Metro.
+
+```bash
+npx expo start -c --dev-client
+```
+
+---
+
+# Troubleshooting
+
+## npm ERR! enoent
+
+Wrong directory.
+
+Go to:
+
+```bash
+cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+```
+
+---
+
+## google-services.json is missing
+
+Verify:
+
+```bash
+ls google-services.json
+```
+
+Also check `.easignore`.
+
+---
+
+## Version code has already been used
+
+Generate another production build.
+
+```bash
+npm run build:android
+```
+
+---
+
+## Free plan build limit reached
+
+Options:
+
+- Wait for Expo quota reset
+- Upgrade Expo plan
+- Build locally
+
+```bash
+npm run build:android:local
+```
+
+---
+
+## Wrong signing key
+
+Verify credentials:
+
+```bash
+npx eas-cli@latest credentials -p android
+```
+
+Expected SHA1:
+
+```
+62:39:6F:0F:E1:ED:EB:0D:92:57:BA:94:02:EE:70:20:98:80:A9:7B
+```
+
+---
+
+## Google Sign-In (10): DEVELOPER_ERROR
+
+Usually caused by:
+
+- Wrong SHA1
+- Incorrect `google-services.json`
+- Wrong package name
+
+Expected package:
+
+```text
+com.perfecten.perfectflow
+```
+
+Download a new `google-services.json` and rebuild.
+
+---
+
+## Google Sign-In (7): NETWORK_ERROR
+
+Usually emulator networking.
+
+Run:
 
 ```bash
 adb shell settings put global http_proxy :0
@@ -362,9 +465,20 @@ adb shell settings put global https_proxy :0
 adb emu kill
 ```
 
-Luego abre el emulador con Cold Boot, reinstala la app y levanta Metro:
+Cold Boot the emulator.
+
+Then:
 
 ```bash
 npm run android
 npx expo start -c --dev-client
 ```
+
+---
+
+# Notes
+
+- Always use Java 17 for Android builds.
+- Google Sign-In should be tested using a Development Build or Production Build, **never Expo Go**.
+- Production builds automatically increment `versionCode`.
+- Keep `google-services.json` synchronized with Firebase after changing SHA fingerprints.

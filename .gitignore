@@ -8,6 +8,10 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+/app/.expo/
+/app/dist/
+/app/web-build/
+/app/expo-env.d.ts
 
 # Native
 .kotlin/
@@ -20,6 +24,10 @@ expo-env.d.ts
 google-services.json
 credentials.json
 credentials/
+/app/credentials.json
+/app/credentials/
+/app/google-services.json
+/app/upload_certificate.pem
 
 # Metro
 .metro-health-check*
@@ -43,6 +51,11 @@ yarn-error.*
 # generated native folders
 /android
 /ios
+/app/android
+/app/ios
+
+# local build artifacts
+/app-release/
 
 # Sensitive OAuth client secret backup (do not commit)
 bkup/client_secret_*.json

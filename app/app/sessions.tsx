@@ -25,29 +25,29 @@ type HelpCard = {
 };
 
 const HELP_ITEMS_EN = [
-  { icon: require('../images/icon-feeling.png'), text: 'Are not feeling yourself' },
-  { icon: require('../images/icon-crisis.png'), text: 'Are experiencing a crisis' },
-  { icon: require('../images/icon-pain.png'), text: 'Have emotional pain' },
-  { icon: require('../images/icon-knoledge.png'), text: 'Know someone who needs help' },
+  { icon: require('../assets/images/icon-feeling.png'), text: 'Are not feeling yourself' },
+  { icon: require('../assets/images/icon-crisis.png'), text: 'Are experiencing a crisis' },
+  { icon: require('../assets/images/icon-pain.png'), text: 'Have emotional pain' },
+  { icon: require('../assets/images/icon-knoledge.png'), text: 'Know someone who needs help' },
 ];
 
 const HELP_ITEMS_ES = [
-  { icon: require('../images/icon-feeling.png'), text: 'No te sientes como tú' },
-  { icon: require('../images/icon-crisis.png'), text: 'Estás pasando una crisis' },
-  { icon: require('../images/icon-pain.png'), text: 'Tienes dolor emocional' },
-  { icon: require('../images/icon-knoledge.png'), text: 'Conoces a alguien que necesita ayuda' },
+  { icon: require('../assets/images/icon-feeling.png'), text: 'No te sientes como tú' },
+  { icon: require('../assets/images/icon-crisis.png'), text: 'Estás pasando una crisis' },
+  { icon: require('../assets/images/icon-pain.png'), text: 'Tienes dolor emocional' },
+  { icon: require('../assets/images/icon-knoledge.png'), text: 'Conoces a alguien que necesita ayuda' },
 ];
 
 const HELP_CARDS: HelpCard[] = [
   {
     country: 'CANADA',
-    flag: require('../images/icon-flag-canda.png'),
+    flag: require('../assets/images/icon-flag-canda.png'),
     numberLabel: 'Toll free no:',
     phone: '+18883025608',
   },
   {
     country: 'USA',
-    flag: require('../images/icon-flag-usa.png'),
+    flag: require('../assets/images/icon-flag-usa.png'),
     numberLabel: 'Toll free no:',
     phone: '+18883025608',
   },
