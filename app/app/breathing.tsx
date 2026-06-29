@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Alert,
   Image,
@@ -77,47 +78,62 @@ const TECHNIQUES: Record<TechniqueName, { pattern: { name: PhaseName; seconds: n
   },
 };
 
-const TECHNIQUE_INFO: Record<TechniqueName, string> = {
-  'Box Breathing': 'Box Breathing: 4s inhale + 4s hold + 4s exhale + 4s hold',
-  '4-7-8 Breathing': '4-7-8 Breathing: 4s inhale + 7s hold + 8s exhale',
-  'Coherent Breathing': 'Coherent Breathing: 5s inhale + 5s exhale',
-  'Calm Reset': 'Calm Reset: 4s inhale + 6s exhale',
-  'Wim Hof': 'Wim Hof: 35 breaths with recovery and hold rounds',
+const TECHNIQUE_INFO: Record<TechniqueName, { en: string; es: string }> = {
+  'Box Breathing': {
+    en: '4s inhale + 4s hold + 4s exhale + 4s hold. This steady rhythm is often used to reduce acute stress and help stabilize attention.',
+    es: '4s inhalar + 4s sostener + 4s exhalar + 4s sostener. Este ritmo estable suele usarse para bajar el estrés agudo y ayudar a estabilizar la atención.',
+  },
+  '4-7-8 Breathing': {
+    en: '4s inhale + 7s hold + 8s exhale. The longer exhale may help shift the body toward a calmer parasympathetic state.',
+    es: '4s inhalar + 7s sostener + 8s exhalar. La exhalación más larga puede ayudar a llevar al cuerpo hacia un estado parasimpático más calmado.',
+  },
+  'Coherent Breathing': {
+    en: '5s inhale + 5s exhale. Around 5 to 6 breaths per minute is commonly linked with improved heart rate variability and regulation.',
+    es: '5s inhalar + 5s exhalar. Respirar alrededor de 5 a 6 veces por minuto suele relacionarse con mejor variabilidad cardiaca y regulación.',
+  },
+  'Calm Reset': {
+    en: '4s inhale + 6s exhale. A slightly longer exhale can help lower physiological arousal and create a faster sense of calm.',
+    es: '4s inhalar + 6s exhalar. Una exhalación un poco más larga puede ayudar a bajar la activación fisiológica y generar calma más rápido.',
+  },
+  'Wim Hof': {
+    en: '35 breaths with recovery and hold rounds. This style can feel energizing, but the breath holds are intense and should always be practiced seated or lying down.',
+    es: '35 respiraciones con rondas de recuperación y retención. Este estilo puede sentirse energizante, pero las retenciones son intensas y deben practicarse sentado o acostado.',
+  },
 };
 
 const BACKGROUNDS = BREATH_BACKGROUNDS;
 
 const SOUNDS = [
-  { key: 'ocean', label: 'Ocean Waves', icon: require('../images/icons_sounds/ocean_1.png'), src: require('../sounds/ocean_1.mp3') },
-  { key: 'ocean2', label: 'Ocean 2', icon: require('../images/icons_sounds/ocean_2.png'), src: require('../sounds/ocean_2.mp3') },
-  { key: 'ocean3', label: 'Ocean 3', icon: require('../images/icons_sounds/ocean_3.png'), src: require('../sounds/ocean_3.mp3') },
-  { key: 'ocean4', label: 'Ocean 4', icon: require('../images/icons_sounds/ocean_4.png'), src: require('../sounds/ocean_4.mp3') },
-  { key: 'rain', label: 'Rain', icon: require('../images/icons_sounds/rain_1.png'), src: require('../sounds/rain_1.mp3') },
-  { key: 'rain2', label: 'Rain 2', icon: require('../images/icons_sounds/rain_2.png'), src: require('../sounds/rain_2.mp3') },
-  { key: 'rain3', label: 'Rain 3', icon: require('../images/icons_sounds/rain_3.png'), src: require('../sounds/rain_3.mp3') },
-  { key: 'rain4', label: 'Rain 4', icon: require('../images/icons_sounds/rain_4.png'), src: require('../sounds/rain_4.mp3') },
-  { key: 'rain5', label: 'Rain 5', icon: require('../images/icons_sounds/rain_5.png'), src: require('../sounds/rain_5.mp3') },
-  { key: 'rain6', label: 'Rain 6', icon: require('../images/icons_sounds/rain_6.png'), src: require('../sounds/rain_6.mp3') },
-  { key: 'wind', label: 'Wind', icon: require('../images/icons_sounds/wind_1.png'), src: require('../sounds/wind_1.mp3') },
-  { key: 'wind2', label: 'Wind 2', icon: require('../images/icons_sounds/wind_2.png'), src: require('../sounds/wind_2.mp3') },
-  { key: 'wind3', label: 'Wind 3', icon: require('../images/icons_sounds/wind_3.png'), src: require('../sounds/wind_3.mp3') },
-  { key: 'forest', label: 'Forest', icon: require('../images/icons_sounds/forest_1.png'), src: require('../sounds/forest_1.mp3') },
-  { key: 'water1', label: 'Water Stream', icon: require('../images/icons_sounds/water_1.png'), src: require('../sounds/water_1.mp3') },
-  { key: 'water2', label: 'Water Flow', icon: require('../images/icons_sounds/water_2.png'), src: require('../sounds/water_2.mp3') },
-  { key: 'waterfall', label: 'Waterfall', icon: require('../images/icons_sounds/waterfall.png'), src: require('../sounds/waterfall.mp3') },
-  { key: 'bird1', label: 'Birds 1', icon: require('../images/icons_sounds/bird_1.png'), src: require('../sounds/bird_1.mp3') },
-  { key: 'bird2', label: 'Birds 2', icon: require('../images/icons_sounds/bird_2.png'), src: require('../sounds/bird_2.mp3') },
-  { key: 'bird3', label: 'Birds 3', icon: require('../images/icons_sounds/bird_3.png'), src: require('../sounds/bird_3.mp3') },
-  { key: 'bird4', label: 'Birds 4', icon: require('../images/icons_sounds/bird_4.png'), src: require('../sounds/bird_4.mp3') },
-  { key: 'cricket1', label: 'Crickets 1', icon: require('../images/icons_sounds/cricket_1.png'), src: require('../sounds/cricket_1.mp3') },
-  { key: 'cricket2', label: 'Crickets 2', icon: require('../images/icons_sounds/cricket_2.png'), src: require('../sounds/cricket_2.mp3') },
-  { key: 'fire1', label: 'Fire 1', icon: require('../images/icons_sounds/fire_1.png'), src: require('../sounds/fire_1.mp3') },
-  { key: 'fire2', label: 'Fire 2', icon: require('../images/icons_sounds/fire_2.png'), src: require('../sounds/fire_2.mp3') },
-  { key: 'frog', label: 'Frog', icon: require('../images/icons_sounds/frog_1.png'), src: require('../sounds/frog_1.mp3') },
-  { key: 'grass', label: 'Grass', icon: require('../images/icons_sounds/grass.png'), src: require('../sounds/grass.mp3') },
-  { key: 'whale', label: 'Whale', icon: require('../images/icons_sounds/whale.png'), src: require('../sounds/whale.mp3') },
-  { key: 'meditation', label: 'Meditation', icon: require('../images/icons_sounds/meditation.png'), src: require('../sounds/meditation.mp3') },
-  { key: 'bell2', label: 'Bell', icon: require('../images/icons_sounds/bell.png'), src: require('../sounds/bell2.mp3') },
+  { key: 'ocean', label: 'Ocean Waves', icon: require('../assets/images/icons_sounds/ocean_1.png'), src: require('../assets/sounds/ocean_1.mp3') },
+  { key: 'ocean2', label: 'Ocean 2', icon: require('../assets/images/icons_sounds/ocean_2.png'), src: require('../assets/sounds/ocean_2.mp3') },
+  { key: 'ocean3', label: 'Ocean 3', icon: require('../assets/images/icons_sounds/ocean_3.png'), src: require('../assets/sounds/ocean_3.mp3') },
+  { key: 'ocean4', label: 'Ocean 4', icon: require('../assets/images/icons_sounds/ocean_4.png'), src: require('../assets/sounds/ocean_4.mp3') },
+  { key: 'rain', label: 'Rain', icon: require('../assets/images/icons_sounds/rain_1.png'), src: require('../assets/sounds/rain_1.mp3') },
+  { key: 'rain2', label: 'Rain 2', icon: require('../assets/images/icons_sounds/rain_2.png'), src: require('../assets/sounds/rain_2.mp3') },
+  { key: 'rain3', label: 'Rain 3', icon: require('../assets/images/icons_sounds/rain_3.png'), src: require('../assets/sounds/rain_3.mp3') },
+  { key: 'rain4', label: 'Rain 4', icon: require('../assets/images/icons_sounds/rain_4.png'), src: require('../assets/sounds/rain_4.mp3') },
+  { key: 'rain5', label: 'Rain 5', icon: require('../assets/images/icons_sounds/rain_5.png'), src: require('../assets/sounds/rain_5.mp3') },
+  { key: 'rain6', label: 'Rain 6', icon: require('../assets/images/icons_sounds/rain_6.png'), src: require('../assets/sounds/rain_6.mp3') },
+  { key: 'wind', label: 'Wind', icon: require('../assets/images/icons_sounds/wind_3.png'), src: require('../assets/sounds/wind_3.mp3') },
+  { key: 'wind2', label: 'Wind 2', icon: require('../assets/images/icons_sounds/wind_2.png'), src: require('../assets/sounds/wind_2.mp3') },
+  { key: 'wind3', label: 'Wind Chimes', icon: require('../assets/images/icons_sounds/wind_1.png'), src: require('../assets/sounds/wind_1.mp3') },
+  { key: 'forest', label: 'Forest', icon: require('../assets/images/icons_sounds/forest_1.png'), src: require('../assets/sounds/forest_1.mp3') },
+  { key: 'water1', label: 'Water Stream', icon: require('../assets/images/icons_sounds/water_1.png'), src: require('../assets/sounds/water_1.mp3') },
+  { key: 'water2', label: 'Water Flow', icon: require('../assets/images/icons_sounds/water_2.png'), src: require('../assets/sounds/water_2.mp3') },
+  { key: 'waterfall', label: 'Waterfall', icon: require('../assets/images/icons_sounds/waterfall.png'), src: require('../assets/sounds/waterfall.mp3') },
+  { key: 'bird1', label: 'Birds 1', icon: require('../assets/images/icons_sounds/bird_1.png'), src: require('../assets/sounds/bird_1.mp3') },
+  { key: 'bird2', label: 'Birds 2', icon: require('../assets/images/icons_sounds/bird_2.png'), src: require('../assets/sounds/bird_2.mp3') },
+  { key: 'bird3', label: 'Birds 3', icon: require('../assets/images/icons_sounds/bird_3.png'), src: require('../assets/sounds/bird_3.mp3') },
+  { key: 'bird4', label: 'Birds 4', icon: require('../assets/images/icons_sounds/bird_4.png'), src: require('../assets/sounds/bird_4.mp3') },
+  { key: 'cricket1', label: 'Crickets 1', icon: require('../assets/images/icons_sounds/cricket_1.png'), src: require('../assets/sounds/cricket_1.mp3') },
+  { key: 'cricket2', label: 'Crickets 2', icon: require('../assets/images/icons_sounds/cricket_2.png'), src: require('../assets/sounds/cricket_2.mp3') },
+  { key: 'fire1', label: 'Fire 1', icon: require('../assets/images/icons_sounds/fire_1.png'), src: require('../assets/sounds/fire_1.mp3') },
+  { key: 'fire2', label: 'Fire 2', icon: require('../assets/images/icons_sounds/fire_2.png'), src: require('../assets/sounds/fire_2.mp3') },
+  { key: 'frog', label: 'Frog', icon: require('../assets/images/icons_sounds/frog_1.png'), src: require('../assets/sounds/frog_1.mp3') },
+  { key: 'grass', label: 'Grass', icon: require('../assets/images/icons_sounds/grass.png'), src: require('../assets/sounds/grass.mp3') },
+  { key: 'whale', label: 'Whale', icon: require('../assets/images/icons_sounds/whale.png'), src: require('../assets/sounds/whale.mp3') },
+  { key: 'meditation', label: 'Meditation', icon: require('../assets/images/icons_sounds/meditation.png'), src: require('../assets/sounds/meditation.mp3') },
+  { key: 'bell2', label: 'Bell', icon: require('../assets/images/icons_sounds/bell.png'), src: require('../assets/sounds/bell2.mp3') },
 ] as const;
 
 const GUIDE_AUDIO = {
@@ -171,16 +187,18 @@ const GUIDE_AUDIO = {
 
 const GUIDE_INTRO_OFFSET_FALLBACK_MS = 5000;
 const GUIDE_INTRO_END_BUFFER_MS = 400;
+const DEFAULT_BREATHING_SOUND: (typeof SOUNDS)[number]['key'] = 'ocean';
+const DEFAULT_BREATHING_VOLUME = 0.3;
 
 export default function BreathingScreen({ navigation, route }: any) {
   const { language } = useI18n();
-  const [technique, setTechnique] = useState<TechniqueName>(route.params?.technique || '4-7-8 Breathing');
+  const [technique, setTechnique] = useState<TechniqueName>(route.params?.technique || 'Box Breathing');
   const [showTechniqueMenu, setShowTechniqueMenu] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [customizeTab, setCustomizeTab] = useState<'backgrounds' | 'sounds'>('sounds');
 
   const [bgKey, setBgKey] = useState<BreathBackgroundKey>('mountain');
-  const [soundKey, setSoundKey] = useState<(typeof SOUNDS)[number]['key'] | 'default'>('default');
+  const [soundKey, setSoundKey] = useState<(typeof SOUNDS)[number]['key'] | 'default'>(DEFAULT_BREATHING_SOUND);
 
   const pattern = useMemo(() => TECHNIQUES[technique].pattern, [technique]);
   const isWimHof = technique === 'Wim Hof';
@@ -196,7 +214,7 @@ export default function BreathingScreen({ navigation, route }: any) {
 
   const [soundObj, setSoundObj] = useState<Audio.Sound | null>(null);
   const [soundPlaying, setSoundPlaying] = useState(false);
-  const [baseSoundVolume, setBaseSoundVolume] = useState(0.65);
+  const [baseSoundVolume, setBaseSoundVolume] = useState(DEFAULT_BREATHING_VOLUME);
   const [guideObj, setGuideObj] = useState<Audio.Sound | null>(null);
   const [guidePlaying, setGuidePlaying] = useState(false);
   const [guideEnabled, setGuideEnabled] = useState(true);
@@ -214,7 +232,7 @@ export default function BreathingScreen({ navigation, route }: any) {
     return name;
   };
   const showTechniqueInfo = () => {
-    Alert.alert(technique, TECHNIQUE_INFO[technique]);
+    Alert.alert(technique, TECHNIQUE_INFO[technique][isSpanish ? 'es' : 'en']);
   };
 
   const currentBg = BACKGROUNDS.find((b) => b.key === bgKey) ?? BACKGROUNDS[0];
@@ -230,6 +248,7 @@ export default function BreathingScreen({ navigation, route }: any) {
   const guideLaunchTokenRef = useRef(0);
   const guideCueKeyRef = useRef<string>('');
   const sessionVersionRef = useRef(0);
+  const guideEndTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     soundObjRef.current = soundObj;
@@ -265,9 +284,50 @@ export default function BreathingScreen({ navigation, route }: any) {
     })();
   }, []);
 
+  const clearGuideEndTimeout = () => {
+    if (guideEndTimeoutRef.current) {
+      clearTimeout(guideEndTimeoutRef.current);
+      guideEndTimeoutRef.current = null;
+    }
+  };
+
+  const stopAmbientSounds = async () => {
+    if (soundObjRef.current) {
+      try {
+        const st = await soundObjRef.current.getStatusAsync();
+        if (st.isLoaded) {
+          await soundObjRef.current.stopAsync();
+          await soundObjRef.current.unloadAsync();
+        }
+      } catch {
+        // Ignore stale unloaded sound instances.
+      } finally {
+        soundObjRef.current = null;
+        setSoundObj(null);
+        setSoundPlaying(false);
+      }
+    }
+
+    for (const item of activeSoundsRef.current) {
+      try {
+        const st = await item.sound.getStatusAsync();
+        if (st.isLoaded) {
+          await item.sound.stopAsync();
+          await item.sound.unloadAsync();
+        }
+      } catch {
+        // Ignore stale unloaded sound instances.
+      }
+    }
+
+    activeSoundsRef.current = [];
+    setActiveSounds([]);
+  };
+
   const resetSessionUi = async () => {
     sessionVersionRef.current += 1;
     guideLaunchTokenRef.current += 1;
+    clearGuideEndTimeout();
     if (guideStartTimeoutRef.current) {
       clearTimeout(guideStartTimeoutRef.current);
       guideStartTimeoutRef.current = null;
@@ -279,11 +339,37 @@ export default function BreathingScreen({ navigation, route }: any) {
     setGuidePlaying(false);
     setGuidedMode(false);
     guideCueKeyRef.current = '';
+    await stopAmbientSounds();
     await stopGuideClip();
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const incomingTechnique = route.params?.technique as TechniqueName | undefined;
+      void (async () => {
+        await resetSessionUi();
+        setTechnique(incomingTechnique || 'Box Breathing');
+        setShowTechniqueMenu(false);
+        setPhaseIndex(0);
+        setLeft(TECHNIQUES[incomingTechnique || 'Box Breathing'].pattern[0].seconds);
+        setSessionLeft((incomingTechnique || 'Box Breathing') === 'Wim Hof' ? 0 : sessionMinutes * 60);
+        setWimHofRoundIndex(1);
+        setWimHofBreathCount(1);
+        setSoundKey(DEFAULT_BREATHING_SOUND);
+        setBaseSoundVolume(DEFAULT_BREATHING_VOLUME);
+        setIsMuted(false);
+        await playOrSwitchSound(DEFAULT_BREATHING_SOUND, DEFAULT_BREATHING_VOLUME);
+      })();
+
+      return () => {
+        void resetSessionUi();
+      };
+    }, [route.params?.technique])
+  );
+
   const finishSession = async (sessionVersion = sessionVersionRef.current) => {
     if (sessionVersion !== sessionVersionRef.current) return;
+    clearGuideEndTimeout();
     setRunning(false);
     setCompleted(true);
     await markTodaySessionDone();
@@ -435,8 +521,12 @@ export default function BreathingScreen({ navigation, route }: any) {
     };
   }, []);
 
-  const playOrSwitchSound = async (key?: (typeof SOUNDS)[number]['key']) => {
+  const playOrSwitchSound = async (
+    key?: (typeof SOUNDS)[number]['key'],
+    volumeOverride?: number,
+  ) => {
     const picked = SOUNDS.find((s) => s.key === (key ?? soundKey)) ?? SOUNDS[0];
+    const nextVolume = volumeOverride ?? baseSoundVolume;
 
     if (soundObj) {
       await soundObj.stopAsync();
@@ -447,9 +537,9 @@ export default function BreathingScreen({ navigation, route }: any) {
     const { sound } = await Audio.Sound.createAsync(picked.src, {
       isLooping: true,
       shouldPlay: true,
-      volume: baseSoundVolume,
+      volume: nextVolume,
     });
-    await sound.setStatusAsync({ shouldPlay: true, isLooping: true, volume: baseSoundVolume, positionMillis: 0 });
+    await sound.setStatusAsync({ shouldPlay: true, isLooping: true, volume: nextVolume, positionMillis: 0 });
     setSoundObj(sound);
     setSoundPlaying(true);
     setSoundKey(picked.key);
@@ -588,6 +678,7 @@ export default function BreathingScreen({ navigation, route }: any) {
     const pack = GUIDE_AUDIO[lang];
     const introClip = isWimHof ? pack.wimHofIntro : pack.intro;
 
+    clearGuideEndTimeout();
     setGuidedMode(true);
     setGuidePlaying(true);
     setGuideSyncPending(true);
@@ -616,6 +707,7 @@ export default function BreathingScreen({ navigation, route }: any) {
     try {
       if (guideEnabled) {
         guideLaunchTokenRef.current += 1;
+        clearGuideEndTimeout();
         if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
         setGuideStartTimeout(null);
         setGuideSyncPending(false);
@@ -673,17 +765,25 @@ export default function BreathingScreen({ navigation, route }: any) {
     if (!completed || !guideEnabled) return;
     const lang = getGuideLang();
     const pack = GUIDE_AUDIO[lang];
+    const sessionVersion = sessionVersionRef.current;
     const playEnd = async () => {
       try {
         await playGuideClip(pack.done);
-        setTimeout(() => {
+        if (sessionVersion !== sessionVersionRef.current) return;
+        clearGuideEndTimeout();
+        guideEndTimeoutRef.current = setTimeout(() => {
+          if (sessionVersion !== sessionVersionRef.current) return;
           void playGuideClip(pack.feel);
+          guideEndTimeoutRef.current = null;
         }, 900);
       } catch (error) {
         console.error('guide ending cue error', error);
       }
     };
     void playEnd();
+    return () => {
+      clearGuideEndTimeout();
+    };
   }, [completed, guideEnabled, language]);
 
   const addOrToggleSound = async (key: (typeof SOUNDS)[number]['key']) => {
@@ -830,7 +930,7 @@ export default function BreathingScreen({ navigation, route }: any) {
               onPress={toggleGuide}
             >
               <Image
-                source={require('../images/icon-talk.png')}
+                source={require('../assets/images/icon-talk.png')}
                 style={[
                   s.guideIconImage,
                   {
@@ -848,7 +948,7 @@ export default function BreathingScreen({ navigation, route }: any) {
               }}
             >
               <Ionicons
-                name='options-outline'
+                name='musical-notes-outline'
                 size={20}
                 color={hasAnySoundSelected ? '#BDA8FF' : '#fff'}
               />
@@ -867,6 +967,15 @@ export default function BreathingScreen({ navigation, route }: any) {
                   await resetSessionUi();
                   setTechnique(name);
                   setShowTechniqueMenu(false);
+                  setPhaseIndex(0);
+                  setLeft(TECHNIQUES[name].pattern[0].seconds);
+                  setSessionLeft(name === 'Wim Hof' ? 0 : sessionMinutes * 60);
+                  setWimHofRoundIndex(1);
+                  setWimHofBreathCount(1);
+                  setSoundKey(DEFAULT_BREATHING_SOUND);
+                  setBaseSoundVolume(DEFAULT_BREATHING_VOLUME);
+                  setIsMuted(false);
+                  await playOrSwitchSound(DEFAULT_BREATHING_SOUND, DEFAULT_BREATHING_VOLUME);
                 }}
               >
                 <Text style={[s.dropdownText, technique === name && s.dropdownTextActive]}>{name}</Text>
@@ -883,11 +992,13 @@ export default function BreathingScreen({ navigation, route }: any) {
             const countdownDisplay = isWimHofBreathPhase ? `${wimHofBreathCount}/${WIM_HOF_BREATHS_PER_ROUND}` : (running ? left : completed ? left : 0);
             return (
           <BreathingCircle
+            phase={rawStep}
             step={localizedStep}
             countdown={countdownDisplay}
             duration={pattern[phaseIndex].seconds * 1000}
             isRunning={running && !showTechniqueMenu}
             completed={completed}
+            variant={technique === 'Box Breathing' ? 'box' : 'circle'}
             doneTitle={isSpanish ? '¡Lo hiciste!' : 'You did it!'}
             doneBody={isSpanish ? '¿Cómo te sientes?' : 'How do you feel?'}
           />
@@ -950,6 +1061,7 @@ export default function BreathingScreen({ navigation, route }: any) {
               const next = !sessionActive;
               if (guideEnabled && next === false) {
                 guideLaunchTokenRef.current += 1;
+                clearGuideEndTimeout();
                 await stopGuideClip();
                 if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
                 guideStartTimeoutRef.current = null;
@@ -1110,7 +1222,7 @@ export default function BreathingScreen({ navigation, route }: any) {
                           activeSounds.some((a) => a.key === snd.key) && s.soundItemActive,
                           soundObj && activeSounds.length === 0 && soundKey === snd.key && s.soundItemActive,
                         ]}
-                        onPress={() => void (soundObj && activeSounds.length === 0 ? playOrSwitchSound(snd.key) : addOrToggleSound(snd.key))}
+                        onPress={() => void addOrToggleSound(snd.key)}
                       >
                         <Image source={snd.icon} style={s.soundIcon} />
                         <Text style={s.soundLabel}>{snd.label}</Text>
@@ -1143,16 +1255,16 @@ const s = StyleSheet.create({
   techniquePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.49)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 7,
     borderRadius: 999,
     flex: 1,
     minWidth: 0,
-    maxWidth: 270,
+    maxWidth: 228,
   },
   techniquePillText: { color: '#fff', fontSize: 17, fontWeight: '600', flexShrink: 1 },
   iconBtn: {

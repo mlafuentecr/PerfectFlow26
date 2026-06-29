@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useI18n } from '../services/i18n';
 import { GLASS_CARD_BASE, TYPE_SCALE } from '../services/uiStyles';
 
-type Tab = 'home' | 'breathing' | 'insights' | 'sessions' | 'profile';
+type Tab = 'home' | 'breathing' | 'tapping' | 'sessions' | 'profile';
 type TabScreen = Tab;
 
 export default function BottomNav({
@@ -21,7 +21,7 @@ export default function BottomNav({
   const items: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap; screen: TabScreen }[] = [
     { key: 'home', label: t('home'), icon: 'home-outline', screen: 'home' },
     { key: 'breathing', label: t('breathe'), icon: 'refresh-circle-outline', screen: 'breathing' },
-    { key: 'insights', label: t('learn'), icon: 'book-outline', screen: 'insights' },
+    { key: 'tapping', label: t('tapping'), icon: 'finger-print-outline', screen: 'tapping' },
     { key: 'sessions', label: t('help'), icon: 'headset-outline', screen: 'sessions' },
     { key: 'profile', label: t('settings'), icon: 'settings-outline', screen: 'profile' },
   ];

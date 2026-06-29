@@ -41,7 +41,7 @@ export default function IndexScreen({ navigation }: Props) {
         style={s.overlay}
       >
         <View style={s.topBlock}>
-          <Image source={require('../images/perfectFlow.png')} style={s.logo} resizeMode="contain" />
+          <Image source={require('../assets/images/perfectFlow.png')} style={s.logo} resizeMode="contain" />
         </View>
 
         <View style={s.middleBlock}>

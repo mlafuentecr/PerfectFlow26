@@ -1,7 +1,6 @@
 import React from 'react';
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Header from '../components/Header';
-import BottomNav from '../components/BottomNav';
 import ScreenBackground from '../components/ScreenBackground';
 import { LEARN_ITEMS, getLearnCardCopy, getLearnItemImage, getWordCount } from '../services/learnContent';
 import { useI18n } from '../services/i18n';
@@ -13,7 +12,7 @@ export default function InsightsScreen({ navigation }: any) {
   return (
     <ScreenBackground>
       <View style={s.overlay}>
-        <Header title={t('learn')} />
+        <Header title={t('learn')} onBack={() => navigation.goBack()} />
         <ScrollView contentContainerStyle={s.listContent} showsVerticalScrollIndicator={false}>
           {LEARN_ITEMS.map((item) => {
             const cardCopy = getLearnCardCopy(item, language);
@@ -40,7 +39,6 @@ export default function InsightsScreen({ navigation }: any) {
           })}
         </ScrollView>
       </View>
-      <BottomNav active='insights' navigate={(screen) => navigation.navigate(screen)} />
     </ScreenBackground>
   );
 }

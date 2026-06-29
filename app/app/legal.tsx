@@ -32,7 +32,7 @@ export default function LegalScreen({ navigation, route }: any) {
         {isDeviceMode ? (
           <View style={s.deviceWrap}>
             <View style={s.deviceHero}>
-              <Image source={require('../images/device/device-lifestyle.jpg')} style={s.deviceHeroImage} resizeMode='cover' />
+              <Image source={require('../assets/images/device/device-lifestyle.jpg')} style={s.deviceHeroImage} resizeMode='cover' />
               <LinearGradient
                 colors={['rgba(5,12,36,0.78)', 'rgba(5,12,36,0.18)']}
                 start={{ x: 0.5, y: 1 }}
@@ -43,10 +43,10 @@ export default function LegalScreen({ navigation, route }: any) {
 
             <View style={s.deviceProductsRow}>
               <BlurView intensity={40} tint='dark' style={s.deviceProductCard}>
-                <Image source={require('../images/device/device-pink.png')} style={s.deviceProductImage} resizeMode='cover' />
+                <Image source={require('../assets/images/device/device-pink.png')} style={s.deviceProductImage} resizeMode='cover' />
               </BlurView>
               <BlurView intensity={40} tint='dark' style={s.deviceProductCard}>
-                <Image source={require('../images/device/device-black.jpg')} style={s.deviceProductImage} resizeMode='cover' />
+                <Image source={require('../assets/images/device/device-black.jpg')} style={s.deviceProductImage} resizeMode='cover' />
               </BlurView>
             </View>
 
@@ -68,7 +68,7 @@ export default function LegalScreen({ navigation, route }: any) {
           </View>
         ) : isBenefitsMode ? (
           <View style={s.benefitsWrap}>
-            <Image source={require('../images/ad-girl.png')} style={s.benefitsHero} resizeMode='cover' />
+            <Image source={require('../assets/images/ad-girl.png')} style={s.benefitsHero} resizeMode='cover' />
             <BlurView intensity={48} tint='dark' style={[s.card, s.cardOpen, s.benefitsTextCard]}>
               <LinearGradient
                 colors={['rgba(12,22,64,0.92)', 'rgba(10,19,56,0.84)', 'rgba(8,16,48,0.78)']}
