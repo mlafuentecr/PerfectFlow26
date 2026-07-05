@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import Slider from '@react-native-community/slider';
@@ -23,20 +24,22 @@ import { markTodaySessionDone } from '../services/streak';
 import { useI18n } from '../services/i18n';
 import {
   BREATH_BACKGROUNDS,
+  BREATH_BACKGROUND_FALLBACK_SRC,
   getBreathBackgroundKey,
   saveBreathBackgroundKey,
   type BreathBackgroundKey,
 } from '../services/breathingPrefs';
 import { getSoundPrefs, saveSoundPrefs } from '../services/soundPrefs';
 
-type TechniqueName = 'Box Breathing' | '4-7-8 Breathing' | 'Coherent Breathing' | 'Calm Reset' | 'Wim Hof';
-type PhaseName = 'Inhale' | 'Exhale' | 'Hold';
+type TechniqueName = 'Box Breathing' | '4-7-8 Breathing' | 'Coherent Breathing' | 'Calm Reset' | 'Wim Hof' | 'Cyclic Sighing';
+type PhaseName = 'Inhale' | 'Exhale' | 'Hold' | 'Top Up' | 'Pause';
 
 const DEFAULT_SESSION_OPTIONS = [3, 5, 10, 15] as const;
 const WIM_HOF_ROUND_OPTIONS = [2, 3, 4] as const;
 const WIM_HOF_BREATHS_PER_ROUND = 35;
 const WIM_HOF_EMPTY_HOLD_SECONDS = 60;
 const WIM_HOF_RECOVERY_HOLD_SECONDS = 15;
+const WIM_HOF_ROUND_READY_SECONDS = 3;
 
 const TECHNIQUES: Record<TechniqueName, { pattern: { name: PhaseName; seconds: number }[] }> = {
   'Box Breathing': {
@@ -64,6 +67,15 @@ const TECHNIQUES: Record<TechniqueName, { pattern: { name: PhaseName; seconds: n
     pattern: [
       { name: 'Inhale', seconds: 4 },
       { name: 'Exhale', seconds: 6 },
+    ],
+  },
+  'Cyclic Sighing': {
+    pattern: [
+      { name: 'Inhale', seconds: 4 },
+      { name: 'Top Up', seconds: 1 },
+      { name: 'Hold', seconds: 3 },
+      { name: 'Exhale', seconds: 7 },
+      { name: 'Pause', seconds: 1 },
     ],
   },
   'Wim Hof': {
@@ -94,6 +106,10 @@ const TECHNIQUE_INFO: Record<TechniqueName, { en: string; es: string }> = {
   'Calm Reset': {
     en: '4s inhale + 6s exhale. A slightly longer exhale can help lower physiological arousal and create a faster sense of calm.',
     es: '4s inhalar + 6s exhalar. Una exhalación un poco más larga puede ayudar a bajar la activación fisiológica y generar calma más rápido.',
+  },
+  'Cyclic Sighing': {
+    en: '4s deep inhale + 1s second inhale + 3s hold + 7s slow exhale + 1s pause. This double inhale followed by a gentle hold and long release is commonly used to reduce stress quickly.',
+    es: '4s inhalación profunda + 1s segunda inhalación + 3s sostén + 7s exhalación lenta + 1s pausa. Esta doble inhalación seguida de una pausa suave y una exhalación larga suele usarse para bajar el estrés rápidamente.',
   },
   'Wim Hof': {
     en: '35 breaths with recovery and hold rounds. This style can feel energizing, but the breath holds are intense and should always be practiced seated or lying down.',
@@ -140,10 +156,13 @@ const GUIDE_AUDIO = {
   en: {
     intro: require('../assets/sounds/audio-guide/intro.mp3'),
     wimHofIntro: require('../assets/sounds/audio-guide/winhof-intro.wav'),
+    cyclicSighingIntro: require('../assets/sounds/audio-guide/CyclicSighing.mp3'),
     steps: {
       Inhale: require('../assets/sounds/audio-guide/Inhale.mp3'),
       Exhale: require('../assets/sounds/audio-guide/Exhale.mp3'),
       Hold: require('../assets/sounds/audio-guide/Hold.mp3'),
+      'Top Up': require('../assets/sounds/audio-guide/Inhale.mp3'),
+      Pause: require('../assets/sounds/audio-guide/Hold.mp3'),
     },
     numbers: {
       1: require('../assets/sounds/audio-guide/One.mp3'),
@@ -163,10 +182,13 @@ const GUIDE_AUDIO = {
   es: {
     intro: require('../assets/sounds/audio-guide/es/es-intro.mp3'),
     wimHofIntro: require('../assets/sounds/audio-guide/es/winhof-intro-es.wav'),
+    cyclicSighingIntro: require('../assets/sounds/audio-guide/Cyclic-Sighing-esp.mp3'),
     steps: {
       Inhale: require('../assets/sounds/audio-guide/es/Inhale.mp3'),
       Exhale: require('../assets/sounds/audio-guide/es/Exhale.mp3'),
       Hold: require('../assets/sounds/audio-guide/es/hold.mp3'),
+      'Top Up': require('../assets/sounds/audio-guide/es/Inhale.mp3'),
+      Pause: require('../assets/sounds/audio-guide/es/hold.mp3'),
     },
     numbers: {
       1: require('../assets/sounds/audio-guide/es/uno.mp3'),
@@ -189,6 +211,7 @@ const GUIDE_INTRO_OFFSET_FALLBACK_MS = 5000;
 const GUIDE_INTRO_END_BUFFER_MS = 400;
 const DEFAULT_BREATHING_SOUND: (typeof SOUNDS)[number]['key'] = 'ocean';
 const DEFAULT_BREATHING_VOLUME = 0.3;
+const BREATHING_KEEP_AWAKE_TAG = 'perfectflow-breathing-session';
 
 export default function BreathingScreen({ navigation, route }: any) {
   const { language } = useI18n();
@@ -196,6 +219,7 @@ export default function BreathingScreen({ navigation, route }: any) {
   const [showTechniqueMenu, setShowTechniqueMenu] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [customizeTab, setCustomizeTab] = useState<'backgrounds' | 'sounds'>('sounds');
+  const [failedBackgroundThumbs, setFailedBackgroundThumbs] = useState<Record<string, boolean>>({});
 
   const [bgKey, setBgKey] = useState<BreathBackgroundKey>('mountain');
   const [soundKey, setSoundKey] = useState<(typeof SOUNDS)[number]['key'] | 'default'>(DEFAULT_BREATHING_SOUND);
@@ -211,6 +235,7 @@ export default function BreathingScreen({ navigation, route }: any) {
   const [wimHofRounds, setWimHofRounds] = useState<(typeof WIM_HOF_ROUND_OPTIONS)[number]>(3);
   const [wimHofRoundIndex, setWimHofRoundIndex] = useState(1);
   const [wimHofBreathCount, setWimHofBreathCount] = useState(1);
+  const [wimHofReadyCountdown, setWimHofReadyCountdown] = useState<number | null>(null);
 
   const [soundObj, setSoundObj] = useState<Audio.Sound | null>(null);
   const [soundPlaying, setSoundPlaying] = useState(false);
@@ -229,6 +254,8 @@ export default function BreathingScreen({ navigation, route }: any) {
     if (name === 'Inhale') return 'Inhala';
     if (name === 'Exhale') return 'Exhala';
     if (name === 'Hold') return 'Sostén';
+    if (name === 'Top Up') return 'Inhala un poco más';
+    if (name === 'Pause') return 'Pausa';
     return name;
   };
   const showTechniqueInfo = () => {
@@ -249,6 +276,7 @@ export default function BreathingScreen({ navigation, route }: any) {
   const guideCueKeyRef = useRef<string>('');
   const sessionVersionRef = useRef(0);
   const guideEndTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wimHofRoundResumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     soundObjRef.current = soundObj;
@@ -284,10 +312,30 @@ export default function BreathingScreen({ navigation, route }: any) {
     })();
   }, []);
 
+  useEffect(() => {
+    const shouldKeepAwake = sessionActive || guidePlaying;
+
+    if (shouldKeepAwake) {
+      void activateKeepAwakeAsync(BREATHING_KEEP_AWAKE_TAG).catch(() => {});
+      return () => {
+        void deactivateKeepAwake(BREATHING_KEEP_AWAKE_TAG).catch(() => {});
+      };
+    }
+
+    void deactivateKeepAwake(BREATHING_KEEP_AWAKE_TAG).catch(() => {});
+  }, [sessionActive, guidePlaying]);
+
   const clearGuideEndTimeout = () => {
     if (guideEndTimeoutRef.current) {
       clearTimeout(guideEndTimeoutRef.current);
       guideEndTimeoutRef.current = null;
+    }
+  };
+
+  const clearWimHofRoundResumeTimeout = () => {
+    if (wimHofRoundResumeTimeoutRef.current) {
+      clearTimeout(wimHofRoundResumeTimeoutRef.current);
+      wimHofRoundResumeTimeoutRef.current = null;
     }
   };
 
@@ -332,10 +380,12 @@ export default function BreathingScreen({ navigation, route }: any) {
       clearTimeout(guideStartTimeoutRef.current);
       guideStartTimeoutRef.current = null;
     }
+    clearWimHofRoundResumeTimeout();
     setGuideStartTimeout(null);
     setGuideSyncPending(false);
     setRunning(false);
     setCompleted(false);
+    setWimHofReadyCountdown(null);
     setGuidePlaying(false);
     setGuidedMode(false);
     guideCueKeyRef.current = '';
@@ -409,6 +459,7 @@ export default function BreathingScreen({ navigation, route }: any) {
     setLeft(pattern[0].seconds);
     setRunning(false);
     setCompleted(false);
+    setWimHofReadyCountdown(null);
     setWimHofRoundIndex(1);
     setWimHofBreathCount(1);
     setSessionLeft(isWimHof ? 0 : sessionMinutes * 60);
@@ -463,9 +514,19 @@ export default function BreathingScreen({ navigation, route }: any) {
                   return 0;
                 }
 
+                clearWimHofRoundResumeTimeout();
+                setRunning(false);
+                setWimHofReadyCountdown(WIM_HOF_ROUND_READY_SECONDS);
                 setWimHofRoundIndex((round) => round + 1);
                 setWimHofBreathCount(1);
                 setPhaseIndex(0);
+                wimHofRoundResumeTimeoutRef.current = setTimeout(() => {
+                  if (currentSessionVersion !== sessionVersionRef.current) return;
+                  setLeft(pattern[0].seconds);
+                  setWimHofReadyCountdown(null);
+                  setRunning(true);
+                  wimHofRoundResumeTimeoutRef.current = null;
+                }, WIM_HOF_ROUND_READY_SECONDS * 1000);
                 return pattern[0].seconds;
               }
             }
@@ -482,6 +543,28 @@ export default function BreathingScreen({ navigation, route }: any) {
     }
     return () => clearInterval(timer);
   }, [running, pattern, phaseIndex, showTechniqueMenu, isWimHof, wimHofBreathCount, wimHofRoundIndex, wimHofRounds]);
+
+  useEffect(() => {
+    if (wimHofReadyCountdown === null || wimHofReadyCountdown <= 1) return;
+
+    const readyTimer = setTimeout(() => {
+      setWimHofReadyCountdown((value) => (value && value > 1 ? value - 1 : value));
+    }, 1000);
+
+    return () => clearTimeout(readyTimer);
+  }, [wimHofReadyCountdown]);
+
+  useEffect(() => {
+    if (!guideEnabled || !guidedMode || wimHofReadyCountdown === null) return;
+
+    const lang = getGuideLang();
+    const pack = GUIDE_AUDIO[lang];
+    const numberClip = pack.numbers[wimHofReadyCountdown];
+
+    if (!numberClip) return;
+
+    void playGuideClip(numberClip, { volume: 0.8 });
+  }, [guideEnabled, guidedMode, wimHofReadyCountdown, language]);
 
   useEffect(() => {
     let sessionTimer: any;
@@ -512,6 +595,8 @@ export default function BreathingScreen({ navigation, route }: any) {
 
   useEffect(() => {
     return () => {
+      void deactivateKeepAwake(BREATHING_KEEP_AWAKE_TAG).catch(() => {});
+      clearWimHofRoundResumeTimeout();
       if (guideStartTimeoutRef.current) clearTimeout(guideStartTimeoutRef.current);
       if (soundObjRef.current) void soundObjRef.current.unloadAsync().catch(() => {});
       if (guideObjRef.current) void guideObjRef.current.unloadAsync().catch(() => {});
@@ -643,10 +728,13 @@ export default function BreathingScreen({ navigation, route }: any) {
           guideCompletionResolverRef.current = resolve;
         })
       : null;
-    const { sound, status } = await Audio.Sound.createAsync(src, {
+    const resolvedSource = typeof src === 'number' ? Image.resolveAssetSource(src) : null;
+    const playableSource = resolvedSource?.uri ? { uri: resolvedSource.uri } : src;
+    const { sound, status } = await Audio.Sound.createAsync(playableSource, {
       shouldPlay: true,
       isLooping: false,
-      volume: isMuted ? 0 : volume,
+      // Voice guide stays audible even if ambient sound is muted.
+      volume,
     });
     guideObjRef.current = sound;
     setGuideObj(sound);
@@ -676,7 +764,11 @@ export default function BreathingScreen({ navigation, route }: any) {
     const launchToken = ++guideLaunchTokenRef.current;
     const lang = getGuideLang();
     const pack = GUIDE_AUDIO[lang];
-    const introClip = isWimHof ? pack.wimHofIntro : pack.intro;
+    const introClip = isWimHof
+      ? pack.wimHofIntro
+      : technique === 'Cyclic Sighing'
+        ? pack.cyclicSighingIntro
+        : pack.intro;
 
     clearGuideEndTimeout();
     setGuidedMode(true);
@@ -740,7 +832,7 @@ export default function BreathingScreen({ navigation, route }: any) {
     const playCue = async () => {
       try {
         if (left === phase.seconds) {
-          const stepClip = pack.steps[phase.name as 'Inhale' | 'Exhale' | 'Hold'];
+          const stepClip = pack.steps[phase.name as PhaseName];
           if (stepClip) {
             await playGuideClip(stepClip, { volume: 0.95 });
             return;
@@ -989,7 +1081,11 @@ export default function BreathingScreen({ navigation, route }: any) {
             const rawStep = running ? pattern[phaseIndex].name : completed ? pattern[phaseIndex].name : 'Ready';
             const localizedStep = stepLabel(rawStep);
             const isWimHofBreathPhase = isWimHof && (rawStep === 'Inhale' || rawStep === 'Exhale');
-            const countdownDisplay = isWimHofBreathPhase ? `${wimHofBreathCount}/${WIM_HOF_BREATHS_PER_ROUND}` : (running ? left : completed ? left : 0);
+            const countdownDisplay = isWimHofBreathPhase
+              ? `${wimHofBreathCount}/${WIM_HOF_BREATHS_PER_ROUND}`
+              : wimHofReadyCountdown !== null
+                ? wimHofReadyCountdown
+                : (running ? left : completed ? left : 0);
             return (
           <BreathingCircle
             phase={rawStep}
@@ -1029,6 +1125,7 @@ export default function BreathingScreen({ navigation, route }: any) {
                     onPress={() => {
                       setRunning(false);
                       setCompleted(false);
+                      setWimHofReadyCountdown(null);
                       setPhaseIndex(0);
                       setLeft(pattern[0].seconds);
                       if (isWimHof) {
@@ -1073,6 +1170,7 @@ export default function BreathingScreen({ navigation, route }: any) {
               }
               if (completed) {
                 setCompleted(false);
+                setWimHofReadyCountdown(null);
                 setSessionLeft(isWimHof ? 0 : sessionMinutes * 60);
                 setPhaseIndex(0);
                 setLeft(pattern[0].seconds);
@@ -1088,7 +1186,9 @@ export default function BreathingScreen({ navigation, route }: any) {
               if (next && !soundObj && activeSounds.length === 0) await playOrSwitchSound();
             }}
           >
-            <Text style={s.startBtnText}>{sessionActive ? 'Pause' : 'Start'}</Text>
+            <Text style={s.startBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {sessionActive ? 'Pause' : 'Start'}
+            </Text>
           </TouchableOpacity>
 
         </View>
@@ -1136,7 +1236,15 @@ export default function BreathingScreen({ navigation, route }: any) {
                           await saveBreathBackgroundKey(bg.key);
                         }}
                       >
-                        <Image source={bg.src} style={[s.bgThumb, bgKey === bg.key && s.bgThumbActive]} />
+                        <Image
+                          source={failedBackgroundThumbs[bg.key] ? BREATH_BACKGROUND_FALLBACK_SRC : bg.src}
+                          style={[s.bgThumb, bgKey === bg.key && s.bgThumbActive]}
+                          onError={() => {
+                            setFailedBackgroundThumbs((current) => (
+                              current[bg.key] ? current : { ...current, [bg.key]: true }
+                            ));
+                          }}
+                        />
                         <Text style={s.bgLabel}>{bg.label}</Text>
                       </TouchableOpacity>
                     ))}

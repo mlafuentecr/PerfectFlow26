@@ -22,25 +22,49 @@ React Native + Expo application for guided breathing exercises.
 ---
 
 # Useful Scripts
-npm start
-npm run android
-npm run ios
-npm run build:android
-npm run build:android:local
-npm run build:android:previewlocal
-npm run build:android:devlocal
-npm run build:ios:local
+
+npx expo start
+
+npm run build:android *aab
+npm run build:android:local *apk
+npm run build:android:previewlocal *apk
 npm run submit:android
 
+npm run build:ios:local
+eas submit --platform ios
+npx eas-cli@latest submit --platform ios  *este
+---
 ---
 
+
+# Testing 
+adb shell wm size
+adb shell wm density
+Physical size: 1080x2400
+Physical density: 420
+Override density: 480
+
+reset density
+adb shell wm density 420
+adb reboot
+
+adb shell settings put system font_scale 1.0
+adb shell wm density reset
+adb shell wm size reset
+adb reboot
+
+adb wait-for-device
+adb shell settings get system font_scale
+adb shell wm density
+adb shell wm size
+---
 
 # Project Structure
 
 The Expo project lives inside:
 
 ```text
-/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+/Users/mariolafuente/Documents/work/Mario/PerfectFlow/app-PerfectFlow/app
 ```
 
 Always run `npm`, `expo`, `npx` and `eas` commands from this folder.
@@ -48,7 +72,7 @@ Always run `npm`, `expo`, `npx` and `eas` commands from this folder.
 If commands are executed from:
 
 ```text
-/Users/mariolafuente/Documents/work/Mario/app-PerfectFlow
+/Users/mariolafuente/Documents/work/Mario/PerfectFlow/app-PerfectFlow
 ```
 
 npm will not find `package.json`.
@@ -70,7 +94,7 @@ npm will not find `package.json`.
 # Installation
 
 ```bash
-cd /Users/mariolafuente/Documents/work/Mario/app-PerfectFlow/app
+cd /Users/mariolafuente/Documents/work/Mario/PerfectFlow/app-PerfectFlow/app
 npm install
 ```
 
@@ -195,37 +219,30 @@ Output:
 .aab
 ```
 
+Internally this runs:
+
+```bash
+npx eas-cli@latest build --platform android --profile production --local
+```
+
+This local build uses Java 17 and creates an Android App Bundle for Google Play.
+
+If Google Play rejects the upload with a message like:
+
+```text
+Your Android App Bundle is signed with the wrong key
+```
+
+the `.aab` was signed with a different keystore than the upload key registered in Google Play Console. In that case:
+
+- check the Android credentials configured in EAS
+- verify the SHA1 of the keystore used for the local build
+- use the same upload key that Google Play already expects for this app
+
 The production profile automatically increments the `versionCode`.
 
 ---
 
-## Preview APK
-
-For manual installation without Metro.
-
-```bash
-npm run build:android:previewlocal
-```
-
-Output:
-
-```text
-.apk
-```
-
-This APK should **not** be uploaded to Google Play.
-
----
-
-## Development Build
-
-```bash
-npm run build:android:devlocal
-```
-
-Generates a Development Client.
-
----
 
 # iOS Builds
 
@@ -241,6 +258,7 @@ Submit:
 
 ```bash
 eas submit --platform ios
+npx eas-cli@latest submit --platform ios
 ```
 
 Local build:
@@ -249,10 +267,73 @@ Local build:
 npm run build:ios:local
 ```
 
-Submit manually:
+Internally this runs:
 
 ```bash
-eas submit --platform ios --path ./builds/PerfectFlow.ipa
+npx eas-cli@latest build --platform ios --profile production --local
+```
+
+To find the generated `.ipa`:
+
+```bash
+find . -name "*.ipa"
+```
+
+## Upload Local IPA To Apple
+
+If you already have a local `.ipa`, submit it with:
+
+```bash
+npx eas-cli@latest submit --platform ios
+```
+
+When EAS asks:
+
+```text
+What would you like to submit?
+```
+
+choose:
+
+```text
+Provide a path to a local app binary file
+```
+
+Then paste the full path to the `.ipa`, for example:
+
+```text
+/Users/mariolafuente/Documents/work/Mario/PerfectFlow/app-PerfectFlow/app/build-1782704975865.ipa
+```
+
+Alternative manual upload on macOS:
+
+- open Apple Transporter
+- sign in with the App Store Connect account
+- drag the `.ipa`
+- click `Deliver`
+
+## Attach The New Build In App Store Connect
+
+After Apple finishes processing the upload:
+
+- open App Store Connect
+- go to the iOS version page
+- in `Build`, select the new processed build
+- click `Save`
+- submit to review again if needed
+
+If the version is already in `Waiting for Review`, Apple will not let you replace the build directly. First:
+
+- click `remove this version from review`
+- wait for the version to leave review
+- upload the new `.ipa`
+- attach the new build
+- resubmit the version
+
+Submit with a direct path if you already know the file location:
+
+```bash
+npx eas-cli@latest submit --platform ios --path /absolute/path/to/file.ipa
 ```
 
 Output:

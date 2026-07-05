@@ -1,7 +1,7 @@
 module.exports = {
   name: 'PerfectFlow',
   slug: 'perfectflow',
-  version: '1.0.9',
+  version: '1.1.3',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',

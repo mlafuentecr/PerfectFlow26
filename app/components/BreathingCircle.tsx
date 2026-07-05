@@ -13,7 +13,7 @@ export default function BreathingCircle({
   doneTitle = 'You did it!',
   doneBody = 'How do you feel?',
 }: {
-  phase?: 'Ready' | 'Inhale' | 'Exhale' | 'Hold';
+  phase?: 'Ready' | 'Inhale' | 'Exhale' | 'Hold' | 'Top Up' | 'Pause';
   step: string;
   countdown: number | string;
   duration: number;
@@ -39,8 +39,13 @@ export default function BreathingCircle({
       scale.setValue(1);
       return;
     }
-    if (breathingPhase === 'Hold') return;
-    const toValue = breathingPhase === 'Inhale' ? 1.25 : 0.9;
+    if (breathingPhase === 'Hold' || breathingPhase === 'Pause') return;
+    const toValue =
+      breathingPhase === 'Inhale'
+        ? 1.24
+        : breathingPhase === 'Top Up'
+          ? 1.34
+          : 0.88;
     Animated.timing(scale, { toValue, duration, useNativeDriver: true }).start();
   }, [breathingPhase, duration, isRunning, scale, completed]);
 
@@ -57,7 +62,7 @@ export default function BreathingCircle({
       ringPulse.setValue(0);
       return;
     }
-    if (breathingPhase === 'Hold') {
+    if (breathingPhase === 'Hold' || breathingPhase === 'Pause') {
       ringLoopRef.current?.stop();
       ringLoopRef.current = null;
       ringPulse.setValue(0);
@@ -105,6 +110,9 @@ export default function BreathingCircle({
           s.circle,
           variant === 'box' && s.circleBox,
           breathingPhase === 'Hold' && !completed && s.circleHold,
+          breathingPhase === 'Pause' && !completed && s.circlePause,
+          breathingPhase === 'Top Up' && !completed && s.circleTopUp,
+          breathingPhase === 'Exhale' && !completed && s.circleExhale,
           completed && s.circleDone,
           { transform: [{ scale }] },
         ]}
@@ -125,7 +133,7 @@ export default function BreathingCircle({
           ) : (
             <>
               <Text style={s.step}>{step}</Text>
-              <Text style={s.count}>{step === 'Ready' ? '--' : countdown}</Text>
+              <Text style={s.count}>{countdown}</Text>
             </>
           )}
         </View>
@@ -193,6 +201,22 @@ const s = StyleSheet.create({
     shadowColor: '#9DAAC2',
     shadowOpacity: 0.6,
   },
+  circlePause: {
+    borderColor: 'rgba(182,205,255,0.64)',
+    backgroundColor: 'rgba(93,116,171,0.24)',
+    shadowColor: '#A0B9F2',
+    shadowOpacity: 0.45,
+  },
+  circleTopUp: {
+    borderColor: 'rgba(182,255,235,0.86)',
+    backgroundColor: 'rgba(110,226,199,0.26)',
+    shadowColor: '#83FFE2',
+  },
+  circleExhale: {
+    borderColor: 'rgba(197,169,255,0.82)',
+    backgroundColor: 'rgba(132,101,214,0.24)',
+    shadowColor: '#B296FF',
+  },
   innerGradient: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -200,11 +224,18 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  innerTextWrap: { alignItems: 'center', justifyContent: 'center' },
+  innerTextWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 26,
+  },
   step: {
     color: '#E9F3FF',
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '500',
+    textAlign: 'center',
+    maxWidth: 160,
     textShadowColor: 'rgba(20,41,112,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,

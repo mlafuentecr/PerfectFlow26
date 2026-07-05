@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Header from '../components/Header';
-import { getLearnItemById, getWordCount } from '../services/learnContent';
+import { getLearnItemById, getLocalizedLearnItem, getWordCount } from '../services/learnContent';
 import ScreenBackground from '../components/ScreenBackground';
 import { useI18n } from '../services/i18n';
 
@@ -9,8 +9,9 @@ export default function LearnDetailScreen({ navigation, route }: any) {
   const { t, language } = useI18n();
   const itemId = route.params?.itemId as string | undefined;
   const item = itemId ? getLearnItemById(itemId) : undefined;
+  const localizedItem = item ? getLocalizedLearnItem(item, language) : undefined;
 
-  if (!item) {
+  if (!localizedItem) {
     return (
       <ScreenBackground>
         <View style={s.overlay}>
@@ -26,9 +27,9 @@ export default function LearnDetailScreen({ navigation, route }: any) {
       <View style={s.overlay}>
         <Header title={t('learn')} onBack={() => navigation.goBack()} />
         <ScrollView contentContainerStyle={s.contentWrap} showsVerticalScrollIndicator={false}>
-          <Text style={s.title}>{item.title}</Text>
-          <Text style={s.meta}>{getWordCount(item.content)} {language === 'es' ? 'palabras' : 'words'}</Text>
-          <Text style={s.body}>{item.content}</Text>
+          <Text style={s.title}>{localizedItem.title}</Text>
+          <Text style={s.meta}>{getWordCount(localizedItem.content)} {language === 'es' ? 'palabras' : 'words'}</Text>
+          <Text style={s.body}>{localizedItem.content}</Text>
         </ScrollView>
       </View>
     </ScreenBackground>

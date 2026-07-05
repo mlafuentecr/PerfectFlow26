@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,8 @@ export default function BottomNav({
   navigate: (screen: TabScreen) => void;
 }) {
   const { t } = useI18n();
+  const { width } = useWindowDimensions();
+  const narrow = width < 390;
 
   const items: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap; screen: TabScreen }[] = [
     { key: 'home', label: t('home'), icon: 'home-outline', screen: 'home' },
@@ -38,7 +40,13 @@ export default function BottomNav({
                 size={22}
                 color={isActive ? '#8D7BFF' : '#D9E2FF'}
               />
-              <Text style={[s.label, isActive && s.labelActive]} numberOfLines={1} adjustsFontSizeToFit>
+              <Text
+                style={[s.label, narrow && s.labelNarrow, isActive && s.labelActive]}
+                numberOfLines={1}
+                ellipsizeMode='tail'
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
                 {item.label}
               </Text>
               {isActive ? <View style={s.dot} /> : null}
@@ -75,6 +83,7 @@ const s = StyleSheet.create({
   },
   item: { alignItems: 'center', flex: 1, minWidth: 0 },
   label: { color: '#D9E2FF', fontSize: TYPE_SCALE.caption, marginTop: 5, fontWeight: '500', maxWidth: '100%' },
+  labelNarrow: { fontSize: 11, marginTop: 4 },
   labelActive: { color: '#A78EFF', fontWeight: '700' },
   dot: { width: 7, height: 7, borderRadius: 6, backgroundColor: '#A78EFF', marginTop: 4 },
 });

@@ -49,6 +49,8 @@ const STRINGS = {
     deviceSection: 'PerfectFlow Device',
     acknowledgments: 'Proven Benefits',
     legalSupport: 'Legal & Support',
+    appVersion: 'Version',
+    buildLabel: 'build',
   },
   es: {
     welcomeHeadline1: 'Encuentra tu calma.',
@@ -93,6 +95,8 @@ const STRINGS = {
     deviceSection: 'Dispositivo PerfectFlow',
     acknowledgments: 'Beneficios comprobados',
     legalSupport: 'Legal y soporte',
+    appVersion: 'Versión',
+    buildLabel: 'build',
   },
 } as const;
 

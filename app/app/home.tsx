@@ -114,8 +114,12 @@ export default function HomeScreen({ navigation }: Props) {
   const [heroBgKey, setHeroBgKey] = useState<(typeof BREATH_BACKGROUNDS)[number]['key']>('mountain');
   const [insightIndex, setInsightIndex] = useState(0);
   const { t, language } = useI18n();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const compact = height < 840;
+  const isPhone = width < 768;
+  const narrow = width < 390;
+  const veryNarrow = width < 360;
+  const quickCardWidth = Math.max(108, Math.min(128, Math.floor((width - (narrow ? 58 : 66)) / 2.35)));
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminder, setReminder] = useState<DailyReminder | null>(null);
   const [reminderHour, setReminderHour] = useState(9);
@@ -217,15 +221,17 @@ export default function HomeScreen({ navigation }: Props) {
         contentContainerStyle={[s.c, compact && s.cCompact]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={s.topRow}>
-          <View style={s.greetWrap}>
-            <Text style={s.greet}>{t('greeting')}</Text>
-            <Text style={s.nameText} numberOfLines={1} ellipsizeMode='tail'>
+        <View style={[s.topRow, narrow && s.topRowNarrow]}>
+          <View style={[s.greetWrap, narrow && s.greetWrapNarrow]}>
+            <Text style={s.greet} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82}>{t('greeting')}</Text>
+            <Text style={s.nameText} numberOfLines={1} ellipsizeMode='tail' adjustsFontSizeToFit minimumFontScale={0.68}>
               {name || 'PerfectFlow'}
             </Text>
-            <Text style={s.helper}>{t('motivator')}</Text>
+            <Text style={s.helper} numberOfLines={2} ellipsizeMode='tail' adjustsFontSizeToFit minimumFontScale={0.84}>
+              {t('motivator')}
+            </Text>
           </View>
-          <TouchableOpacity style={[s.reminderIconBtn, compact && s.reminderIconBtnCompact, reminder && s.reminderIconBtnActive]} onPress={openReminderModal}>
+          <TouchableOpacity style={[s.reminderIconBtn, compact && s.reminderIconBtnCompact, narrow && s.reminderIconBtnNarrow, reminder && s.reminderIconBtnActive]} onPress={openReminderModal}>
             <Ionicons name='notifications' size={22} color={reminder ? '#B9A7FF' : '#EEF3FF'} />
             {reminder ? <View style={s.reminderDot} /> : null}
           </TouchableOpacity>
@@ -241,16 +247,31 @@ export default function HomeScreen({ navigation }: Props) {
               style={[s.heroOverlay, compact && s.heroOverlayCompact]}
             >
               <View style={s.heroContent}>
-                <View style={s.heroRow}>
+                <View style={s.heroStack}>
                   <View style={s.heroCopyWrap}>
-                  <Text style={s.heroTitle}>{language === 'es' ? 'Respira y reinicia' : 'Breathe and Reset'}</Text>
-                  <Text style={s.heroDesc}>
+                  <Text
+                    style={[s.heroTitle, veryNarrow && s.heroTitleVeryNarrow]}
+                    numberOfLines={2}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.78}
+                  >
+                    {language === 'es' ? 'Respira y reinicia' : 'Breathe and Reset'}
+                  </Text>
+                  <Text
+                    style={[s.heroDesc, veryNarrow && s.heroDescVeryNarrow]}
+                    numberOfLines={3}
+                    ellipsizeMode='tail'
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.82}
+                  >
                     {language === 'es' ? 'Toma una respiración consciente y reinicia tu estado.' : 'Take a mindful breath and reset your mood.'}
                   </Text>
                   </View>
                   <View style={s.heroFooterRow}>
                     <View style={s.heroBtn}>
-                      <Text style={s.heroBtnText}>{t('startBreathing')}</Text>
+                      <Text style={s.heroBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82}>
+                        {t('startBreathing')}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -260,21 +281,25 @@ export default function HomeScreen({ navigation }: Props) {
         </Pressable>
 
         <View style={[s.quickHeaderRow, compact && s.quickHeaderRowCompact]}>
-          <Text style={s.quickTitle}>{language === 'es' ? 'Cambia tu estado' : 'Shift Your Mood'}</Text>
-          <Text style={s.quickHint}>{language === 'es' ? 'Desliza' : 'Swipe'}</Text>
+          <Text style={s.quickTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86}>
+            {language === 'es' ? 'Cambia tu estado' : 'Shift Your Mood'}
+          </Text>
+          <Text style={s.quickHint} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.84}>
+            {language === 'es' ? 'Desliza' : 'Swipe'}
+          </Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.quickRow, compact && s.quickRowCompact]} style={[s.quickRowScroll, compact && s.quickRowScrollCompact]}>
           {MOOD_SESSIONS.map((session) => (
             <Pressable
               key={session.title}
-              style={[s.quickCard, compact && s.quickCardCompact]}
+              style={[s.quickCard, compact && s.quickCardCompact, { width: compact ? Math.max(104, quickCardWidth - 4) : quickCardWidth }]}
               onPress={() => navigation.navigate('breathing', { technique: session.technique })}
             >
               <LinearGradient
                 colors={session.gradient}
                 start={{ x: 0.5, y: 1 }}
                 end={{ x: 0.5, y: 0 }}
-                style={s.quickCardGradient}
+                style={[s.quickCardGradient, veryNarrow && s.quickCardGradientNarrow]}
               >
                 <View style={s.quickTimeBadge}>
                   <Text style={s.quickTimeBadgeText}>{session.time.replace(/\s+/g, '')}</Text>
@@ -282,14 +307,30 @@ export default function HomeScreen({ navigation }: Props) {
                 <View style={s.quickIconWrap}>
                   <Ionicons name={session.icon} size={26} color={session.tint} />
                 </View>
-                <Text style={s.quickCardTitle}>{language === 'es' ? (MOOD_TITLE_ES[session.title] ?? session.title) : session.title}</Text>
-                <Text style={s.quickCardTechnique}>{language === 'es' ? TECHNIQUE_ES[session.technique] : session.technique}</Text>
+                <Text
+                  style={[s.quickCardTitle, veryNarrow && s.quickCardTitleNarrow]}
+                  numberOfLines={3}
+                  ellipsizeMode='tail'
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.82}
+                >
+                  {language === 'es' ? (MOOD_TITLE_ES[session.title] ?? session.title) : session.title}
+                </Text>
+                <Text
+                  style={[s.quickCardTechnique, veryNarrow && s.quickCardTechniqueNarrow]}
+                  numberOfLines={2}
+                  ellipsizeMode='tail'
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.84}
+                >
+                  {language === 'es' ? TECHNIQUE_ES[session.technique] : session.technique}
+                </Text>
               </LinearGradient>
             </Pressable>
           ))}
         </ScrollView>
 
-        <Pressable style={[s.insightCard, compact && s.insightCardCompact]} onPress={() => navigation.navigate('insights')}>
+        <Pressable style={[s.insightCard, compact && s.insightCardCompact, isPhone && s.insightCardPhone]} onPress={() => navigation.navigate('insights')}>
           <ImageBackground source={require('../assets/images/daily-insight.png')} style={[s.insightGradient, compact && s.insightGradientCompact]}>
             <LinearGradient
               colors={['rgba(5,15,48,0.84)', 'rgba(5,15,48,0.62)', 'rgba(5,15,48,0.20)']}
@@ -298,31 +339,31 @@ export default function HomeScreen({ navigation }: Props) {
               end={{ x: 0.5, y: 0 }}
               style={s.insightOverlay}
             >
-              <View style={[s.insightLeft, compact && s.insightLeftCompact]}>
-                <View style={s.insightTopRow}>
-                  <Text style={s.insightTitle}>{t('dailyInsight')}</Text>
-                  <View style={s.learnPill}>
-                    <Text style={s.learnPillText}>{t('learn')}</Text>
+              <View style={[s.insightLeft, compact && s.insightLeftCompact, isPhone && s.insightLeftPhone]}>
+                <View style={[s.insightTopRow, isPhone && s.insightTopRowPhone]}>
+                  <Text style={s.insightTitle} numberOfLines={1} ellipsizeMode='tail' adjustsFontSizeToFit minimumFontScale={0.8}>{t('dailyInsight')}</Text>
+                  <View style={[s.learnPill, isPhone && s.learnPillPhone]}>
+                    <Text style={s.learnPillText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>{t('learn')}</Text>
                   </View>
                 </View>
-                <Text style={s.insightHook}>{insights[insightIndex].hook}</Text>
-                <Text style={s.insightMsg}>{insights[insightIndex].message}</Text>
+                <Text style={s.insightHook} numberOfLines={2} ellipsizeMode='tail'>{insights[insightIndex].hook}</Text>
+                <Text style={s.insightMsg} numberOfLines={3} ellipsizeMode='tail'>{insights[insightIndex].message}</Text>
               </View>
             </LinearGradient>
           </ImageBackground>
         </Pressable>
 
-        <View style={[s.streakCard, compact && s.streakCardCompact]}>
-          <View style={s.streakHeaderRow}>
+        <View style={[s.streakCard, compact && s.streakCardCompact, narrow && s.streakCardNarrow, isPhone && s.streakCardPhone]}>
+          <View style={[s.streakHeaderRow, isPhone && s.streakHeaderRowPhone]}>
             <View style={s.streakHeaderLeft}>
-              <Text style={s.streakTitle}>{language === 'es' ? 'Tu racha' : 'Your Streak'}</Text>
+              <Text style={s.streakTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.84}>{language === 'es' ? 'Tu racha' : 'Your Streak'}</Text>
               {streak >= 2 ? (
                 <Text style={s.streakDaysText}>
                   <Text style={s.streakDaysNumber}>{streak}</Text>
                   <Text style={s.streakDaysCopy}>{language === 'es' ? ' días seguidos' : ' days in a row'}</Text>
                 </Text>
               ) : (
-                <Text style={s.streakDaysCopyMuted}>
+                <Text style={s.streakDaysCopyMuted} numberOfLines={2} ellipsizeMode='tail'>
                   {language === 'es' ? 'Sigue así. Tu racha empieza en 2 días.' : 'Keep going. Your streak starts at 2 days.'}
                 </Text>
               )}
@@ -335,7 +376,7 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
           </View>
 
-          <View style={s.weekRow}>
+          <View style={[s.weekRow, narrow && s.weekRowNarrow]}>
             {weekDayLabels.map((d, idx) => {
               const done = !!week[idx];
               const isToday = idx === todayIndexMonFirst;
@@ -413,7 +454,7 @@ const s = StyleSheet.create({
   screenBg: { flex: 1 },
   bgPurpleTint: { ...StyleSheet.absoluteFillObject },
   contentScroll: { flex: 1 },
-  c: { paddingHorizontal: 16, paddingTop: 46, paddingBottom: 10 },
+  c: { paddingLeft: 16, paddingRight: 20, paddingTop: 46, paddingBottom: 10 },
   cCompact: { paddingTop: 36, paddingBottom: 8 },
   topRow: {
     marginBottom: 10,
@@ -421,10 +462,12 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  greetWrap: { maxWidth: '80%', paddingRight: 8 },
-  greet: { color: '#CEDBFF', fontSize: 15, fontWeight: '500', letterSpacing: 0.2 },
-  nameText: { color: '#F7FAFF', fontSize: 24, lineHeight: 34, fontWeight: '800', marginTop: 3, letterSpacing: -0.3 },
-  helper: { color: '#C2D1F7', fontSize: 14, marginTop: 2, fontWeight: '500' },
+  topRowNarrow: { gap: 10 },
+  greetWrap: { flex: 1, minWidth: 0, maxWidth: '80%', paddingRight: 12 },
+  greetWrapNarrow: { maxWidth: '76%', paddingRight: 8 },
+  greet: { color: '#CEDBFF', fontSize: 15, fontWeight: '500', letterSpacing: 0.2, flexShrink: 1 },
+  nameText: { color: '#F7FAFF', fontSize: 24, lineHeight: 30, fontWeight: '800', marginTop: 3, letterSpacing: -0.3, flexShrink: 1 },
+  helper: { color: '#C2D1F7', fontSize: 14, marginTop: 4, fontWeight: '500', lineHeight: 18, flexShrink: 1 },
   reminderIconBtn: {
     width: 66,
     height: 66,
@@ -443,6 +486,11 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
+  },
+  reminderIconBtnNarrow: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
   },
   reminderIconBtnActive: {
     borderColor: 'rgba(193,171,255,0.95)',
@@ -481,11 +529,13 @@ const s = StyleSheet.create({
   },
   heroOverlayCompact: { paddingHorizontal: 12, paddingVertical: 9 },
   heroContent: { minHeight: 0 },
-  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
-  heroCopyWrap: { flex: 1, gap: 5, maxWidth: '66%' },
-  heroFooterRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end' },
-  heroTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
-  heroDesc: { color: '#DCE7FF', fontSize: 13, lineHeight: 18, fontWeight: '500' },
+  heroStack: { gap: 12 },
+  heroCopyWrap: { gap: 5, maxWidth: '100%', minWidth: 0 },
+  heroFooterRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'flex-start' },
+  heroTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2, lineHeight: 22, flexShrink: 1 },
+  heroTitleVeryNarrow: { fontSize: 18, lineHeight: 20 },
+  heroDesc: { color: '#DCE7FF', fontSize: 13, lineHeight: 18, fontWeight: '500', flexShrink: 1 },
+  heroDescVeryNarrow: { fontSize: 12, lineHeight: 16 },
   heroBtn: {
     alignSelf: 'flex-end',
     paddingHorizontal: 18,
@@ -513,6 +563,7 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
   },
   insightCardCompact: { marginBottom: 10 },
+  insightCardPhone: { marginRight: 0 },
   insightGradient: {
     minHeight: 142,
     justifyContent: 'center',
@@ -529,7 +580,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   insightLeftCompact: { paddingHorizontal: 16, paddingVertical: 12, paddingRight: 38 },
+  insightLeftPhone: { paddingHorizontal: 16, paddingRight: 16 },
   insightTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 },
+  insightTopRowPhone: { gap: 8 },
   insightTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 6, letterSpacing: -0.2 },
   learnPill: {
     borderRadius: 999,
@@ -539,9 +592,10 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(212,209,255,0.65)',
   },
+  learnPillPhone: { paddingHorizontal: 10, paddingVertical: 5, flexShrink: 0 },
   learnPillText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
   insightHook: { color: '#9E8BFF', fontSize: 15, fontWeight: '700', marginBottom: 6 },
-  insightMsg: { color: '#D6E2FF', fontSize: 14, lineHeight: 20, maxWidth: 370, fontWeight: '500' },
+  insightMsg: { color: '#D6E2FF', fontSize: 14, lineHeight: 20, maxWidth: '100%', fontWeight: '500', flexShrink: 1 },
   quickHeaderRow: {
     marginTop: 0,
     marginBottom: 6,
@@ -552,7 +606,7 @@ const s = StyleSheet.create({
   },
   quickHeaderRowCompact: { marginBottom: 4 },
   quickTitle: { color: '#F5F8FF', fontSize: 17, fontWeight: '800', marginTop: 0, letterSpacing: -0.1, flexShrink: 1 },
-  quickHint: { color: '#9A84FF', fontSize: 16, fontWeight: '700' },
+  quickHint: { color: '#9A84FF', fontSize: 16, fontWeight: '700', flexShrink: 0, marginLeft: 10 },
   quickRowScroll: {
     minHeight: 142,
     marginBottom: SECTION_GAP,
@@ -563,13 +617,14 @@ const s = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 2,
     gap: 12,
-    paddingRight: 8,
+    paddingLeft: 2,
+    paddingRight: 24,
     alignItems: 'stretch',
   },
   quickRowCompact: { paddingBottom: 4 },
   quickCard: {
-    width: 116,
-    height: 136,
+    width: 124,
+    minHeight: 136,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(155,178,255,0.44)',
@@ -582,7 +637,7 @@ const s = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
   },
-  quickCardCompact: { width: 116, height: 126, borderRadius: 18 },
+  quickCardCompact: { width: 126, minHeight: 126, borderRadius: 18 },
   quickCardGradient: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -591,6 +646,11 @@ const s = StyleSheet.create({
     paddingBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+  },
+  quickCardGradientNarrow: {
+    paddingHorizontal: 9,
+    paddingTop: 48,
+    paddingBottom: 9,
   },
   quickIconWrap: {
     position: 'absolute',
@@ -617,8 +677,10 @@ const s = StyleSheet.create({
     borderColor: 'rgba(199,215,255,0.35)',
   },
   quickTimeBadgeText: { color: '#E7EFFF', fontSize: 11, fontWeight: '700' },
-  quickCardTitle: { color: '#F6F8FF', fontSize: 14, fontWeight: '700', lineHeight: 17, marginTop: 4 },
-  quickCardTechnique: { color: '#B7C7F8', marginTop: 2, fontSize: 12, lineHeight: 14, marginBottom: 0, fontWeight: '500' },
+  quickCardTitle: { color: '#F6F8FF', fontSize: 14, fontWeight: '700', lineHeight: 17, marginTop: 4, flexShrink: 1, minHeight: 50 },
+  quickCardTitleNarrow: { fontSize: 13, lineHeight: 16, minHeight: 48 },
+  quickCardTechnique: { color: '#B7C7F8', marginTop: 2, fontSize: 12, lineHeight: 14, marginBottom: 0, fontWeight: '500', flexShrink: 1, minHeight: 28 },
+  quickCardTechniqueNarrow: { fontSize: 11, lineHeight: 13, minHeight: 26 },
   streakCard: {
     borderRadius: 26,
     borderWidth: 1,
@@ -635,12 +697,15 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
   },
   streakCardCompact: { paddingTop: 10, paddingBottom: 8 },
+  streakCardNarrow: { paddingHorizontal: 16 },
+  streakCardPhone: { paddingRight: 16 },
   streakHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  streakHeaderRowPhone: { gap: 10 },
   streakHeaderLeft: { flex: 1, paddingRight: 12 },
   streakTitle: { color: '#F5F8FF', fontSize: 20, fontWeight: '800', letterSpacing: -0.2 },
   streakDaysText: { marginTop: 2 },
@@ -663,7 +728,8 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
   },
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  dayWrap: { alignItems: 'center', width: 34 },
+  weekRowNarrow: { columnGap: 4 },
+  dayWrap: { alignItems: 'center', width: 32, flexShrink: 1 },
   dayCircle: {
     width: 28,
     height: 28,

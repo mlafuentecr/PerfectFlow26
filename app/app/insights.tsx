@@ -2,7 +2,7 @@ import React from 'react';
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Header from '../components/Header';
 import ScreenBackground from '../components/ScreenBackground';
-import { LEARN_ITEMS, getLearnCardCopy, getLearnItemImage, getWordCount } from '../services/learnContent';
+import { LEARN_ITEMS, getLearnCardCopy, getLearnItemImage, getLocalizedLearnItem, getWordCount } from '../services/learnContent';
 import { useI18n } from '../services/i18n';
 import { GLASS_CARD_BASE } from '../services/uiStyles';
 
@@ -15,8 +15,9 @@ export default function InsightsScreen({ navigation }: any) {
         <Header title={t('learn')} onBack={() => navigation.goBack()} />
         <ScrollView contentContainerStyle={s.listContent} showsVerticalScrollIndicator={false}>
           {LEARN_ITEMS.map((item) => {
+            const localizedItem = getLocalizedLearnItem(item, language);
             const cardCopy = getLearnCardCopy(item, language);
-            const words = getWordCount(item.content);
+            const words = getWordCount(localizedItem.content);
             return (
               <View key={item.id} style={s.card}>
                 <ImageBackground source={getLearnItemImage(item.backgroundKey)} style={s.cardImage} imageStyle={s.cardImageStyle}>

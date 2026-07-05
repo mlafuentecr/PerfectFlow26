@@ -14,12 +14,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import Slider from '@react-native-community/slider';
 import BottomNav from '../components/BottomNav';
 import {
   BREATH_BACKGROUNDS,
+  BREATH_BACKGROUND_FALLBACK_SRC,
   getBreathBackgroundKey,
   saveBreathBackgroundKey,
   type BreathBackgroundKey,
@@ -204,6 +206,7 @@ type SoundKey = (typeof SOUNDS)[number]['key'];
 type ActiveSound = { key: SoundKey; sound: Audio.Sound; volume: number };
 const DEFAULT_TAPPING_SOUND: SoundKey = 'ocean';
 const DEFAULT_TAPPING_VOLUME = 0.3;
+const TAPPING_KEEP_AWAKE_TAG = 'perfectflow-tapping-session';
 
 export default function TappingScreen({ navigation }: any) {
   const { language } = useI18n();
@@ -226,6 +229,7 @@ export default function TappingScreen({ navigation }: any) {
   const [showCustomize, setShowCustomize] = useState(false);
   const [customizeTab, setCustomizeTab] = useState<'backgrounds' | 'sounds'>('sounds');
   const [isMuted, setIsMuted] = useState(false);
+  const [failedBackgroundThumbs, setFailedBackgroundThumbs] = useState<Record<string, boolean>>({});
 
   const guideObjRef = useRef<Audio.Sound | null>(null);
   const soundObjRef = useRef<Audio.Sound | null>(null);
@@ -240,8 +244,8 @@ export default function TappingScreen({ navigation }: any) {
   const currentSound = SOUNDS.find((item) => item.key === soundKey) ?? null;
   const hasAnySoundSelected = activeSounds.length > 0 || !!soundObj;
   const progress = `${stepIndex + 1}/${TAPPING_STEPS.length}`;
-  const imageWidth = Math.min(width - 54, compact ? 320 : 430);
-  const imageHeight = Math.min(imageWidth / 0.88, compact ? 356 : 460);
+  const imageWidth = Math.min(width - 44, compact ? 332 : 430);
+  const imageHeight = Math.max(220, Math.min(height * 0.29, compact ? 270 : 320));
 
   useEffect(() => {
     soundObjRef.current = soundObj;
@@ -321,7 +325,8 @@ export default function TappingScreen({ navigation }: any) {
     const { sound } = await Audio.Sound.createAsync(src, {
       shouldPlay: true,
       isLooping: false,
-      volume: isMuted ? 0 : 0.95,
+      // Voice guide stays audible even if ambient sound is muted.
+      volume: 0.95,
     });
 
     guideObjRef.current = sound;
@@ -367,6 +372,19 @@ export default function TappingScreen({ navigation }: any) {
   }, []);
 
   useEffect(() => {
+    const shouldKeepAwake = running || guidePlaying;
+
+    if (shouldKeepAwake) {
+      void activateKeepAwakeAsync(TAPPING_KEEP_AWAKE_TAG).catch(() => {});
+      return () => {
+        void deactivateKeepAwake(TAPPING_KEEP_AWAKE_TAG).catch(() => {});
+      };
+    }
+
+    void deactivateKeepAwake(TAPPING_KEEP_AWAKE_TAG).catch(() => {});
+  }, [running, guidePlaying]);
+
+  useEffect(() => {
     (async () => {
       setBgKey(await getBreathBackgroundKey());
       await getSoundPrefs();
@@ -399,6 +417,7 @@ export default function TappingScreen({ navigation }: any) {
 
   useEffect(() => {
     return () => {
+      void deactivateKeepAwake(TAPPING_KEEP_AWAKE_TAG).catch(() => {});
       clearAutoAdvanceTimeout();
       void stopGuideClip();
       void stopAmbientSounds();
@@ -728,8 +747,12 @@ export default function TappingScreen({ navigation }: any) {
             </TouchableOpacity>
 
             <View style={s.headerTitleWrap}>
-              <Text style={s.headerEyebrow}>{isSpanish ? 'Guía de tapping' : 'Tapping Guide'}</Text>
-              <Text style={s.headerTitle}>{isSpanish ? 'Sesión' : 'Session'}</Text>
+              <Text style={s.headerEyebrow} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.84}>
+                {isSpanish ? 'Guía de tapping' : 'Tapping Guide'}
+              </Text>
+              <Text style={s.headerTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.84}>
+                {isSpanish ? 'Sesión' : 'Session'}
+              </Text>
             </View>
 
             <View style={s.topRightActions}>
@@ -795,29 +818,39 @@ export default function TappingScreen({ navigation }: any) {
           </View>
 
           <View style={s.copyWrap}>
-            <Text style={s.stepTitle}>
+            <Text style={s.stepTitle} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.84}>
               {completed ? (isSpanish ? 'Sesión completada' : 'Session completed') : step.title[isSpanish ? 'es' : 'en']}
             </Text>
-            <Text style={s.stepBody}>{bodyCopy}</Text>
+            <Text style={s.stepBody} numberOfLines={4} ellipsizeMode='tail'>
+              {bodyCopy}
+            </Text>
           </View>
 
-          <View style={s.progressDotsRow}>
-            {TAPPING_STEPS.map((item, index) => {
-              const active = index === stepIndex;
-              const done = index < stepIndex || completed;
-              return (
-                <View key={item.id} style={s.dotWrap}>
-                  <TouchableOpacity
-                    style={[s.progressDot, active && s.progressDotActive, done && s.progressDotDone]}
-                    onPress={() => void jumpToStep(index)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[s.progressDotText, (active || done) && s.progressDotTextActive]}>{item.id}</Text>
-                  </TouchableOpacity>
-                  {index < TAPPING_STEPS.length - 1 ? <View style={[s.dotLine, (done || active) && s.dotLineActive]} /> : null}
-                </View>
-              );
-            })}
+          <View style={s.progressGrid}>
+            {[TAPPING_STEPS.slice(0, 5), TAPPING_STEPS.slice(5)].map((row, rowIndex) => (
+              <View key={`row-${rowIndex}`} style={s.progressGridRow}>
+                {row.map((item, itemIndex) => {
+                  const index = rowIndex === 0 ? itemIndex : itemIndex + 5;
+                  const active = index === stepIndex;
+                  const done = index < stepIndex || completed;
+
+                  return (
+                    <React.Fragment key={item.id}>
+                      <TouchableOpacity
+                        style={[s.progressNode, active && s.progressNodeActive, done && s.progressNodeDone]}
+                        onPress={() => void jumpToStep(index)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[s.progressNodeText, (active || done) && s.progressNodeTextActive]}>{item.id}</Text>
+                      </TouchableOpacity>
+                      {itemIndex < row.length - 1 ? (
+                        <View style={[s.progressConnector, (done || active) && s.progressConnectorActive]} />
+                      ) : null}
+                    </React.Fragment>
+                  );
+                })}
+              </View>
+            ))}
           </View>
 
         </ScrollView>
@@ -827,7 +860,9 @@ export default function TappingScreen({ navigation }: any) {
             <Text style={s.completionBadge}>{isSpanish ? 'Bien hecho' : 'Well done!'}</Text>
           ) : null}
           <TouchableOpacity style={s.primaryBtn} onPress={() => void handlePrimaryAction()}>
-            <Text style={s.primaryBtnText}>{buttonLabel}</Text>
+            <Text style={s.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78}>
+              {buttonLabel}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -896,7 +931,15 @@ export default function TappingScreen({ navigation }: any) {
                             await saveBreathBackgroundKey(bg.key);
                           }}
                         >
-                          <Image source={bg.src} style={[s.bgThumb, bgKey === bg.key && s.bgThumbActive]} />
+                          <Image
+                            source={failedBackgroundThumbs[bg.key] ? BREATH_BACKGROUND_FALLBACK_SRC : bg.src}
+                            style={[s.bgThumb, bgKey === bg.key && s.bgThumbActive]}
+                            onError={() => {
+                              setFailedBackgroundThumbs((current) => (
+                                current[bg.key] ? current : { ...current, [bg.key]: true }
+                              ));
+                            }}
+                          />
                           <Text style={s.bgLabel}>{bg.label}</Text>
                         </TouchableOpacity>
                       ))}
@@ -1058,20 +1101,21 @@ const s = StyleSheet.create({
   centerScroll: { flex: 1 },
   centerWrap: {
     paddingTop: 10,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
   centerWrapCompact: {
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   imagePanel: {
     alignSelf: 'center',
+    marginTop: 10,
     borderRadius: 30,
     borderWidth: 1,
     borderColor: 'rgba(160,182,255,0.38)',
     paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 10,
+    paddingBottom: 8,
     backgroundColor: 'rgba(53,78,125,0.42)',
     shadowColor: '#06143B',
     shadowOpacity: 0.34,
@@ -1109,7 +1153,8 @@ const s = StyleSheet.create({
   copyWrap: {
     alignItems: 'center',
     paddingHorizontal: 12,
-    marginTop: 12,
+    marginTop: 14,
+    marginBottom: 8,
   },
   stepTitle: {
     color: '#FFFFFF',
@@ -1122,55 +1167,60 @@ const s = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
     maxWidth: 320,
     fontWeight: '500',
   },
-  progressDotsRow: {
+  progressGrid: {
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+    paddingHorizontal: 10,
+  },
+  progressGridRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 14,
-    paddingHorizontal: 4,
   },
-  dotWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 999,
-    backgroundColor: 'rgba(22,36,74,0.72)',
+  progressNode: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: 'rgba(20,34,70,0.84)',
     borderWidth: 1,
-    borderColor: 'rgba(130,151,197,0.36)',
+    borderColor: 'rgba(112,139,198,0.62)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#07142E',
+    shadowOpacity: 0.26,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
   },
-  progressDotActive: {
+  progressNodeActive: {
     backgroundColor: '#8AF2D2',
-    borderColor: '#AAFFE7',
+    borderColor: '#B7FFE9',
   },
-  progressDotDone: {
-    backgroundColor: 'rgba(117,160,255,0.5)',
-    borderColor: 'rgba(173,205,255,0.7)',
+  progressNodeDone: {
+    backgroundColor: 'rgba(93,122,194,0.52)',
+    borderColor: 'rgba(155,186,255,0.72)',
   },
-  progressDotText: {
-    color: '#D3DCFF',
-    fontSize: 11,
-    fontWeight: '700',
+  progressNodeText: {
+    color: '#F4F7FF',
+    fontSize: 16,
+    fontWeight: '800',
   },
-  progressDotTextActive: {
+  progressNodeTextActive: {
     color: '#14312B',
   },
-  dotLine: {
-    width: 14,
-    height: 1,
-    backgroundColor: 'rgba(134,156,200,0.46)',
-    marginHorizontal: 3,
+  progressConnector: {
+    width: 12,
+    height: 2,
+    backgroundColor: 'rgba(129,151,198,0.58)',
+    marginHorizontal: 2,
+    borderRadius: 999,
   },
-  dotLineActive: {
-    backgroundColor: 'rgba(137,242,209,0.8)',
+  progressConnectorActive: {
+    backgroundColor: 'rgba(137,242,209,0.86)',
   },
   infoBtn: {
     width: 28,
@@ -1310,28 +1360,27 @@ const s = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'space-between',
   },
   bgItem: {
-    width: '30%',
-    minWidth: 90,
+    width: '31%',
+    marginBottom: 12,
   },
   bgThumb: {
     width: '100%',
-    aspectRatio: 0.7,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    height: 106,
+    borderRadius: 12,
   },
   bgThumbActive: {
-    borderColor: '#9D8CFF',
+    borderWidth: 3,
+    borderColor: '#8B7BFF',
   },
   bgLabel: {
-    color: '#E8EEFF',
+    color: '#DFE7FF',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   selectedSoundsWrap: {
     gap: 10,
